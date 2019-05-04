@@ -1,0 +1,32 @@
+ADJ	&QBEG;&ADJ;&QEND;	"« saine »"
+ADJ	&ADJ;(&CCONJ;&ADJ;)+	"rouge et vert"
+ADJ	&ADJ;&ADP;(&NUM;|&NOUN;|&ADJ;|&ADP;)+	"agés de six mois à quatre ans"
+ADJ	&ADV;+&ADJ;	"naturellement présente"
+
+ADV	&QBEG;&ADV;&QEND;	"« plus »"
+ADV	&ADV;&ADV;	"plus vite" 
+
+ADP	&QBEG;&ADP;&QEND;	"« près »"
+ADP	&ADP;&ADP;	"en avant" 
+ADP	&ADV;&ADP;	"plus près" 
+
+PART	&QBEG;&PART;&QEND;	"« marqué »"
+PART	&ADV;&PART;	"plus marqué"
+
+CCONJ	&CCONJ;&ADV;	"ou encore" 
+
+VERB	&QBEG;&VERB;&QEND;	"« peut »"
+VERB	(&ADV;|&PART;|&INF;|&VERB;|&AUX;)*(&VERB;|&AUX;)+(&PART;|&INF;)*	"a été rapidement mangé" "peuvent être"
+VERB	&VERB;&CCONJ;&VERB;	"commandé et fabriqué"
+
+NOUN	&QBEG;&NOUN;&QEND;	"« IBG »"
+NOUN	&PRON;&INF;	"au dîner"
+NOUN	&NOUN;&HYP;&ADV;	"prix-là"
+NOUN	(&PRON;&PRON;)&VERB;	"ceux qui comptent"	"il y a"(?)
+NOUN	(&NOUN;|&PROPN;|&PRON;|&X;)	
+NOUN	(&NOUN;&ADP;*(&ADJ;|&PART;)*)+	"papillon vert saturé" "robe en bleu"
+NOUN	(&DET;|&NUM;|&NOUN;)(&NUM;|&ADJ;|&ADV;|&DET;|&ADP;|&CCONJ;|&NOUN;)*&NOUN;	"la grande peinture" "le 21 mars" "un peu plus de deux ans"
+NOUN	&NOUN;((&CCONJ;|&NUM;)&NOUN;)+	"Paul et Jacques" "samedi 27 avril"
+NOUN	&NOUN;&HYP;&NOUN;	"homme - femme"
+NOUN	(&ADJ;|&NUM;)+&NOUN;	"premier parti" "deux verres"
+
