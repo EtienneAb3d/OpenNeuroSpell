@@ -29,4 +29,5 @@ Nous NOUN F=false P=true posExt=PRON
 sommes VERB F=false P=true posExt=AUX
 désormais ADV F=false P=false posExt=ADV
 un ­ « véritable » vignoble NOUN F=false P=false posExt=DET NOUN PUNCT ADJ PUNCT ADJ
-. PUNCT F=false P=false posExt=PUNCT```
+. PUNCT F=false P=false posExt=PUNCT
+```
