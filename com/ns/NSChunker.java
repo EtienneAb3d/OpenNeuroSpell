@@ -33,7 +33,8 @@ public class NSChunker {
 	}
 	
 	class NSChunkerRule{
-		Pattern pattern = null;
+		Pattern patternPOS = null;
+		Pattern patternTag = null;
 		String pos = null;
 	}
 	
@@ -72,19 +73,38 @@ public class NSChunker {
 			if(aLine.isEmpty()){
 				continue;
 			}
-			rules.add(compileRule(aLine));
+			NSChunkerRule aR = compileRule(aLine);
+			if(aR == null) {
+				//Just a comment ?
+				continue;
+			}
+			rules.add(aR);
 		}
 		aBR.close();
 	}
 	
 	NSChunkerRule compileRule(String aRule) throws Exception {
-		NSChunkerRule aR = new NSChunkerRule();
 		String[] aTs = aRule.split("\t");
-		aR.pos = aTs[0];
-		aR.pattern = Pattern.compile(aTs[1]
+		int aIdx = 0;
+		if(aIdx >= aTs.length || aTs[aIdx].startsWith("//")) {
+			return null;
+		}
+		NSChunkerRule aR = new NSChunkerRule();
+		aR.pos = aTs[aIdx++];
+		aR.patternPOS = Pattern.compile(aTs[aIdx++]
 				.replaceAll("&", "( [0-9,]+")
 				.replaceAll(";", ")")
 				);
+		if(aIdx >= aTs.length || aTs[aIdx].startsWith("//")) {
+			return aR;
+		}
+		aR.patternTag = Pattern.compile(aTs[aIdx++]
+				.replaceAll("&", "( [0-9,]+")
+				.replaceAll(";", ")")
+				);
+		if(aIdx >= aTs.length || aTs[aIdx].startsWith("//")) {
+			return aR;
+		}
 		return aR;
 	}
 	
@@ -111,27 +131,12 @@ public class NSChunker {
 			aW.lemma = (String)aA.get(1);
 			aW.pos = (String)aA.get(2);
 			aW.tag = (String)aA.get(3);
-			if(aW.pos.matches("(VERB|AUX)") && aW.tag.indexOf("VerbForm=Part")>=0) {
-				aW.pos = "PART";
-			}
-			if(aW.pos.matches("(VERB|AUX)") && aW.tag.indexOf("VerbForm=Inf")>=0) {
-				aW.pos = "INF";
-			}
-			if(aW.pos.matches("PUNCT") && aW.word.equals("-")) {
-				aW.pos = "HYP";
-			}
-			if(aW.pos.matches("PUNCT") && aW.word.matches("[«]")) {
-				aW.pos = "QBEG";
-			}
-			if(aW.pos.matches("PUNCT") && aW.word.matches("[»]")) {
-				aW.pos = "QEND";
-			}
 			aWs.add(aW);
 			aPosSB.append(" "+aCountW+","+aCountW+aW.pos);
 			aCountW++;
 		}
 		
-		Vector<NSChunkerChunk> aChunks = buildChunks(aWs,applyRules(aPosSB.toString()));
+		Vector<NSChunkerChunk> aChunks = buildChunks(aWs,applyRules(aWs,aPosSB.toString()));
 		for(NSChunkerChunk aC : aChunks) {
 			System.out.println(aC.chunk+" "+aC.pos+" F="+aC.hasFem+" P="+aC.hasPlur+" posExt="+aC.posExt);
 		}
@@ -139,36 +144,40 @@ public class NSChunker {
 	
 	Vector<NSChunkerChunk> buildChunks(Vector<NSChunkerWord> aWs,String aPosStr)  throws Exception {
 		Vector<NSChunkerChunk> aChunks = new Vector<NSChunkerChunk>();
-		String[] aPoss = aPosStr.trim().split(" ");
-		for(String aPos : aPoss) {
-			int aS = Integer.parseInt(aPos.replaceAll(",.*", ""));
-			int aE = Integer.parseInt(aPos.replaceAll("(.*,|[^0-9,]+)", ""));
-			NSChunkerChunk aChunk = new NSChunkerChunk();
-			aChunk.pos = aPos.replaceAll("[0-9,]", "");
-			StringBuffer aChunkSB = new StringBuffer();
-			StringBuffer aPosSB = new StringBuffer();
-			for(int p = aS;p<=aE;p++) {
-				NSChunkerWord aW = aWs.elementAt(p);
-				aChunkSB.append(" "+aW.word);
-				aPosSB.append(" "+aW.pos);
-				if(aW.tag.indexOf("=Plur")>=0) {
-					aChunk.hasPlur = true;
-				}
-				if(aW.tag.indexOf("=Fem")>=0) {
-					aChunk.hasFem = true;
-				}
-			}
-			aChunk.chunk = aChunkSB.toString().trim();
-			aChunk.posExt = aPosSB.toString().trim();
-			aChunks.add(aChunk);
+		String[] aPosToks = aPosStr.trim().split(" ");
+		for(String aPosTok : aPosToks) {
+			aChunks.add(buildChunk(aWs, aPosTok));
 		}
 		return aChunks;
 	}
 	
-	String applyRules(String aPosStr) throws Exception {
+	NSChunkerChunk buildChunk(Vector<NSChunkerWord> aWs,String aPosTok)  throws Exception {
+		NSChunkerChunk aChunk = new NSChunkerChunk();
+		aChunk.pos = aPosTok.replaceAll("[0-9,]", "");
+		int aS = Integer.parseInt(aPosTok.replaceAll(",.*", ""));
+		int aE = Integer.parseInt(aPosTok.replaceAll("(.*,|[^0-9,]+)", ""));
+		StringBuffer aChunkSB = new StringBuffer();
+		StringBuffer aPosSB = new StringBuffer();
+		for(int p = aS;p<=aE;p++) {
+			NSChunkerWord aW = aWs.elementAt(p);
+			aChunkSB.append(" "+aW.word);
+			aPosSB.append(" "+aW.pos);
+			if(aW.tag.indexOf("=Plur")>=0) {
+				aChunk.hasPlur = true;
+			}
+			if(aW.tag.indexOf("=Fem")>=0) {
+				aChunk.hasFem = true;
+			}
+		}
+		aChunk.chunk = aChunkSB.toString().trim();
+		aChunk.posExt = aPosSB.toString().trim();
+		return aChunk;
+	}
+	
+	String applyRules(Vector<NSChunkerWord> aWs,String aPosStr) throws Exception {
 		System.out.println(aPosStr);
 		for(int r = 0;r < rules.size();r++) {
-			String aNew = applyRule(rules.elementAt(r),aPosStr);
+			String aNew = applyRule(aWs,rules.elementAt(r),aPosStr);
 			if(aNew != null) {
 				//Something rewritten, need to restart
 				r= 0;
@@ -179,8 +188,8 @@ public class NSChunker {
 		return aPosStr;
 	}
 	
-	String applyRule(NSChunkerRule aR,String aPosStr) throws Exception {
-		Matcher aM = aR.pattern.matcher(aPosStr);
+	String applyRule(Vector<NSChunkerWord> aWs,NSChunkerRule aR,String aPosStr) throws Exception {
+		Matcher aM = aR.patternPOS.matcher(aPosStr);
 		while(aM.find()) {
 			String aChunk = aPosStr.substring(aM.start(),aM.end());
 			String[] aCPs = aChunk.trim().split(" ");
@@ -190,6 +199,14 @@ public class NSChunker {
 			if(aChunk.equals(aPosNew)) {
 				//No change
 				continue;
+			}
+			if(aR.patternTag != null) {
+				//Need to build a single chunk
+				NSChunkerChunk aC = buildChunk(aWs, aPosNew.trim());
+				if(!aR.patternTag.matcher(aC.chunk).matches()){
+					//Ignore
+					continue;
+				}
 			}
 			System.out.println("ChunkP: '"+aChunk+"' => '"+aPosNew+"'");
 			return aPosStr.substring(0, aM.start())
@@ -202,7 +219,7 @@ public class NSChunker {
 	public static void main(String[] args) {
 		try {
 			String aTxt = 
-					"Il y a quatre mois, nous avons acheté des vignes dans l’Oregon. Nous sommes désormais un ­véritable vignoble.";
+					"Il y a quatre mois, nous avons acheté des vignes dans l’Oregon. Nous sommes désormais un ­« véritable » vignoble.";
 			new NSChunker("fr").process(aTxt);
 		}
 		catch(Throwable t) {
