@@ -202,9 +202,7 @@ public class NSChunker {
 	public static void main(String[] args) {
 		try {
 			String aTxt = 
-					"il y a quatre mois, nous avons acheté des vignes dans l’Oregon. Nous sommes désormais un ­véritable vignoble.";
-//					"Pour le déjeuner, on est parti déjeuner, si la trottinette électrique saturée a engendré d'importantes modifications au niveau de la mobilité à #Marseille, cela pourrait également affecter le marché immobilier phocéen";
-//					"Je suis allé vite avec mes grands ami Vincent et Patty à Saint Malo par un temps vert et gris à 10H30 tapante et j'ai mangé une pizza froide devant l'église Notre Dame.";
+					"Il y a quatre mois, nous avons acheté des vignes dans l’Oregon. Nous sommes désormais un ­véritable vignoble.";
 			new NSChunker("fr").process(aTxt);
 		}
 		catch(Throwable t) {
