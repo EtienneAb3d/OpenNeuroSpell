@@ -28,6 +28,7 @@ public class NSChunker {
 		String chunk = null;
 		String pos = null;
 		String posExt = null;
+		String tagExt = null;
 		boolean hasFem = false;
 		boolean hasPlur = false;
 	}
@@ -35,6 +36,7 @@ public class NSChunker {
 	class NSChunkerRule{
 		Pattern patternPOS = null;
 		Pattern patternTag = null;
+		Pattern patternText = null;
 		String pos = null;
 	}
 	
@@ -105,6 +107,13 @@ public class NSChunker {
 		if(aIdx >= aTs.length || aTs[aIdx].startsWith("//")) {
 			return aR;
 		}
+		aR.patternText = Pattern.compile(aTs[aIdx++]
+				.replaceAll("&", "( [0-9,]+")
+				.replaceAll(";", ")")
+				);
+		if(aIdx >= aTs.length || aTs[aIdx].startsWith("//")) {
+			return aR;
+		}
 		return aR;
 	}
 	
@@ -158,10 +167,12 @@ public class NSChunker {
 		int aE = Integer.parseInt(aPosTok.replaceAll("(.*,|[^0-9,]+)", ""));
 		StringBuffer aChunkSB = new StringBuffer();
 		StringBuffer aPosSB = new StringBuffer();
+		StringBuffer aTagSB = new StringBuffer();
 		for(int p = aS;p<=aE;p++) {
 			NSChunkerWord aW = aWs.elementAt(p);
 			aChunkSB.append(" "+aW.word);
 			aPosSB.append(" "+aW.pos);
+			aTagSB.append(" "+aW.tag);
 			if(aW.tag.indexOf("=Plur")>=0) {
 				aChunk.hasPlur = true;
 			}
@@ -171,6 +182,7 @@ public class NSChunker {
 		}
 		aChunk.chunk = aChunkSB.toString().trim();
 		aChunk.posExt = aPosSB.toString().trim();
+		aChunk.tagExt = aTagSB.toString().trim();
 		return aChunk;
 	}
 	
@@ -200,10 +212,14 @@ public class NSChunker {
 				//No change
 				continue;
 			}
-			if(aR.patternTag != null) {
+			if(aR.patternTag != null || aR.patternText != null) {
 				//Need to build a single chunk
 				NSChunkerChunk aC = buildChunk(aWs, aPosNew.trim());
-				if(!aR.patternTag.matcher(aC.chunk).matches()){
+				if(aR.patternTag != null && !aR.patternTag.matcher(aC.tagExt).matches()){
+					//Ignore
+					continue;
+				}
+				if(aR.patternText != null && !aR.patternText.matcher(aC.chunk).matches()){
 					//Ignore
 					continue;
 				}

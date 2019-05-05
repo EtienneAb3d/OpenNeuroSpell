@@ -1,12 +1,17 @@
-//RULE ORDER IS IMPORTANT !
-//Special single POS update rules
+//  On each line a rule, with tab separated elements. 
+//  The two firsts are mandatory:
+//  LABEL	POS_RE	[TAG_RE]	[TEXT_RE]	[//Comment]
+//
+//  RULE ORDER IS IMPORTANT !
+
+//  Special single POS update rules
 PART	(&VERB;|&AUX;)	.*VerbForm=Part.*
 INF	(&VERB;|&AUX;)	.*VerbForm=Inf.*
-HYP	&PUNCT;	-
-QBEG	&PUNCT;	[«]	//Need to enrich the list
-QEND	&PUNCT;	[»]	//Need to enrich the list
+HYP	&PUNCT;	.*	-
+QBEG	&PUNCT;	.*	[«“]	//Need to enrich the list
+QEND	&PUNCT;	.*	[»”]	//Need to enrich the list
 
-//Chunking rewriting rules
+//  Chunking rewriting rules
 ADJ	&QBEG;&ADJ;&QEND;	//"« saine »"
 ADJ	&ADJ;(&CCONJ;&ADJ;)+	//"rouge et vert"
 ADJ	&ADJ;&ADP;(&NUM;|&NOUN;|&ADJ;|&ADP;)+	//"agés de six mois à quatre ans"
