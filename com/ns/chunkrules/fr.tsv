@@ -4,9 +4,9 @@
 //
 //  RULE ORDER IS IMPORTANT !
 
-//  Special single POS update rules
-PART	(&VERB;|&AUX;)	.*VerbForm=Part.*
-INF	(&VERB;|&AUX;)	.*VerbForm=Inf.*
+//  Special single POS update rules ("+" prefix = hard rewriting of word POS)
++PART	(&VERB;|&AUX;)	.*VerbForm=Part.*
++INF	(&VERB;|&AUX;)	.*VerbForm=Inf.*
 HYP	&PUNCT;	.*	-
 QBEG	&PUNCT;	.*	[«“]	//Need to enrich the list
 QEND	&PUNCT;	.*	[»”]	//Need to enrich the list

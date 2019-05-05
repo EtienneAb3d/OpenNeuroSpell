@@ -34,6 +34,7 @@ public class NSChunker {
 	}
 	
 	class NSChunkerRule{
+		boolean hardReplacePOS = false;
 		Pattern patternPOS = null;
 		Pattern patternTag = null;
 		Pattern patternText = null;
@@ -93,6 +94,10 @@ public class NSChunker {
 		}
 		NSChunkerRule aR = new NSChunkerRule();
 		aR.pos = aTs[aIdx++];
+		if(aR.pos.startsWith("+")) {
+			aR.pos = aR.pos.substring(1);
+			aR.hardReplacePOS = true;
+		}
 		aR.patternPOS = Pattern.compile(aTs[aIdx++]
 				.replaceAll("&", "( [0-9,]+")
 				.replaceAll(";", ")")
@@ -225,6 +230,10 @@ public class NSChunker {
 				}
 			}
 			System.out.println("ChunkP: '"+aChunk+"' => '"+aPosNew+"'");
+			if(aR.hardReplacePOS && aS == aE) {
+				//Hard rewriting of word POS
+				aWs.elementAt(aS).pos = aR.pos;
+			}
 			return aPosStr.substring(0, aM.start())
 					+ aPosNew
 					+ aPosStr.substring(aM.end());
