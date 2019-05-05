@@ -22,7 +22,7 @@ Run <code>com.ns.NSChunker.main()</code>. You should get this final chunking:
 Il y a quatre mois NOUN F=false P=true posExt=PRON PRON VERB NUM NOUN
 , PUNCT F=false P=false posExt=PUNCT
 nous NOUN F=false P=true posExt=PRON
-avons acheté VERB F=false P=true posExt=AUX PART
+avons acheté VERB F=false P=true posExt=AUX VBN
 des vignes dans l' Oregon NOUN F=true P=true posExt=DET NOUN ADP DET PROPN
 . PUNCT F=false P=false posExt=PUNCT
 Nous NOUN F=false P=true posExt=PRON
