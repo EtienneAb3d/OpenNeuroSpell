@@ -4,14 +4,15 @@
 //
 //  RULE ORDER IS IMPORTANT !
 
-//  Special single POS update rules ("+" prefix = hard rewriting of word POS)
+LAYER	//  Special single POS update rules ("+" prefix = hard rewriting of word POS)
 +VBN	(&VERB;|&AUX;)	.*VerbForm=Part.*
 +INF	(&VERB;|&AUX;)	.*VerbForm=Inf.*
 HYP	&PUNCT;	.*	-
 QBEG	&PUNCT;	.*	[«“]	//Need to enrich the list
 QEND	&PUNCT;	.*	[»”]	//Need to enrich the list
 
-//  Chunking rewriting rules
+LAYER	//  Chunking rewriting rules
+
 ADJ	&QBEG;&ADJ;&QEND;	//"« saine »"
 ADJ	&ADJ;(&CCONJ;&ADJ;)+	//"rouge et vert"
 ADJ	&ADJ;&ADP;(&NUM;|&NOUN;|&ADJ;|&ADP;)+	//"agés de six mois à quatre ans"

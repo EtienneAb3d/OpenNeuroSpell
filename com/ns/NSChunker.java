@@ -41,7 +41,7 @@ public class NSChunker {
 		String pos = null;
 	}
 	
-	Vector<NSChunkerRule> rules = new Vector<NSChunkerRule>();
+	Vector<Vector<NSChunkerRule>> ruleLayers = new Vector<Vector<NSChunkerRule>>();
 	
 	public NSChunker(String aLng) throws Exception {
 		lng = aLng.toLowerCase();
@@ -71,9 +71,15 @@ public class NSChunker {
 		BufferedReader aBR = new BufferedReader(
 				new InputStreamReader(NeuroLex.class.getResourceAsStream("chunkrules/"+lng+".tsv")));
 		String aLine = null;
+		Vector<NSChunkerRule> aCurrentRules = null;
 		while((aLine = aBR.readLine()) != null){
 			aLine = aLine.trim();
 			if(aLine.isEmpty()){
+				continue;
+			}
+			if(aLine.startsWith("LAYER")) {
+				aCurrentRules = new Vector<NSChunkerRule>();
+				ruleLayers.add(aCurrentRules);
 				continue;
 			}
 			NSChunkerRule aR = compileRule(aLine);
@@ -81,7 +87,7 @@ public class NSChunker {
 				//Just a comment ?
 				continue;
 			}
-			rules.add(aR);
+			aCurrentRules.add(aR);
 		}
 		aBR.close();
 	}
@@ -193,13 +199,15 @@ public class NSChunker {
 	
 	String applyRules(Vector<NSChunkerWord> aWs,String aPosStr) throws Exception {
 		System.out.println(aPosStr);
-		for(int r = 0;r < rules.size();r++) {
-			String aNew = applyRule(aWs,rules.elementAt(r),aPosStr);
-			if(aNew != null) {
-				//Something rewritten, need to restart
-				r= 0;
-				aPosStr = aNew;
-				System.out.println(aPosStr);
+		for(Vector<NSChunkerRule> aRules : ruleLayers) {
+			for(int r = 0;r < aRules.size();r++) {
+				String aNew = applyRule(aWs,aRules.elementAt(r),aPosStr);
+				if(aNew != null) {
+					//Something rewritten, need to restart
+					r= 0;
+					aPosStr = aNew;
+					System.out.println(aPosStr);
+				}
 			}
 		}
 		return aPosStr;
