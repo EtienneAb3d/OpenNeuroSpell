@@ -5,7 +5,7 @@
 //  RULE ORDER IS IMPORTANT !
 
 //  Special single POS update rules ("+" prefix = hard rewriting of word POS)
-+PART	(&VERB;|&AUX;)	.*VerbForm=Part.*
++VBN	(&VERB;|&AUX;)	.*VerbForm=Part.*
 +INF	(&VERB;|&AUX;)	.*VerbForm=Inf.*
 HYP	&PUNCT;	.*	-
 QBEG	&PUNCT;	.*	[«“]	//Need to enrich the list
@@ -24,13 +24,13 @@ ADP	&QBEG;&ADP;&QEND;	//"« près »"
 ADP	&ADP;&ADP;	//"en avant" 
 ADP	&ADV;&ADP;	//"plus près" 
 
-PART	&QBEG;&PART;&QEND;	//"« marqué »"
-PART	&ADV;&PART;	//"plus marqué"
+VBN	&QBEG;&VBN;&QEND;	//"« marqué »"
+VBN	&ADV;&VBN;	//"plus marqué"
 
 CCONJ	&CCONJ;&ADV;	//"ou encore" 
 
 VERB	&QBEG;&VERB;&QEND;	//"« peut »"
-VERB	(&ADV;|&PART;|&INF;|&VERB;|&AUX;)*(&VERB;|&AUX;)+(&PART;|&INF;)*	//"a été rapidement mangé" "peuvent être"
+VERB	(&ADV;|&VBN;|&INF;|&VERB;|&AUX;)*(&VERB;|&AUX;)+(&VBN;|&INF;)*	//"a été rapidement mangé" "peuvent être"
 VERB	&VERB;&CCONJ;&VERB;	//"commandé et fabriqué"
 
 NOUN	&QBEG;&NOUN;&QEND;	//"« IBG »"
@@ -38,7 +38,7 @@ NOUN	&PRON;&INF;	//"au dîner"
 NOUN	&NOUN;&HYP;&ADV;	//"prix-là"
 NOUN	(&PRON;&PRON;)&VERB;	//"ceux qui comptent" "il y a"(?)
 NOUN	(&NOUN;|&PROPN;|&PRON;|&X;)	
-NOUN	(&NOUN;&ADP;*(&ADJ;|&PART;)*)+	//"papillon vert saturé" "robe en bleu"
+NOUN	(&NOUN;&ADP;*(&ADJ;|&VBN;)*)+	//"papillon vert saturé" "robe en bleu"
 NOUN	(&DET;|&NUM;|&NOUN;)(&NUM;|&ADJ;|&ADV;|&DET;|&ADP;|&CCONJ;|&NOUN;)*&NOUN;	//"la grande peinture" "le 21 mars" "un peu plus de deux ans"
 NOUN	&NOUN;((&CCONJ;|&NUM;)&NOUN;)+	//"Paul et Jacques" "samedi 27 avril"
 NOUN	&NOUN;&HYP;&NOUN;	//"homme - femme"
