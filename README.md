@@ -2,6 +2,8 @@
 OpenNeuroSpell contains parts of NeuroSpell (http://neurospell.com/en.php) released as open-source. More code will be published as soon as proprietary parts will be rewritten.
 ## A- Chunker
 
+NSChunker is a rule-based iterative label rewriter / aggregator. Each rule takes into account the POS-tagging, the extended TAG, and the text of words. Rules are organised in independant layers.
+
 The first version is available with a draft rule set for french.
 
 ### 1- Install and run spaCy server
