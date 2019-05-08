@@ -69,7 +69,7 @@ public class NSChunker {
 	
 	void loadRules() throws Exception {
 		BufferedReader aBR = new BufferedReader(
-				new InputStreamReader(NeuroLex.class.getResourceAsStream("chunkrules/"+lng+".tsv")));
+				new InputStreamReader(NSChunker.class.getResourceAsStream("chunkrules/"+lng+".tsv")));
 		String aLine = null;
 		Vector<NSChunkerRule> aCurrentRules = null;
 		while((aLine = aBR.readLine()) != null){
