@@ -14,16 +14,6 @@ import com.mindprod.http.Get;
 import com.mindprod.http.Post;
 
 public class NSChunker {
-	String lng = null;
-	String model = null;
-	
-	class NSChunkerWord{
-		String word = null;
-		String lemma = null;
-		String pos = null;
-		String tag = null;
-	}
-
 	class NSChunkerChunk{
 		String chunk = null;
 		String pos = null;
@@ -34,6 +24,7 @@ public class NSChunker {
 	}
 	
 	class NSChunkerRule{
+		String ruleDef = null;
 		boolean hardReplacePOS = false;
 		Pattern patternPOS = null;
 		Pattern patternTag = null;
@@ -41,30 +32,18 @@ public class NSChunker {
 		String pos = null;
 	}
 	
+	String lng = null;
+	String spaCyModel = null;
+	
 	Vector<Vector<NSChunkerRule>> ruleLayers = new Vector<Vector<NSChunkerRule>>();
+
+	NSAligner aligner = null;
 	
 	public NSChunker(String aLng) throws Exception {
 		lng = aLng.toLowerCase();
-		getModel();
+		findSpaCyModel();
 		loadRules();
-	}
-	
-	void getModel() throws Exception {
-		Get aGet = new Get();
-		System.out.println("MODELS");
-		String aRep = aGet.send("localhost", 8080, "/models", "utf-8");
-		System.out.println(aRep);
-		JSONParser parser = new JSONParser();
-		JSONObject aJSO = (JSONObject)parser.parse(aRep);
-		for(Object aO : aJSO.keySet()) {
-			String aM = (String)aO;
-			if(aM.startsWith(lng+"_")) {
-				if(model != null) {
-					System.err.println("ALREADY A MODEL:"+model+" / "+aM+" ??");
-				}
-				model = aM;
-			}
-		}
+		aligner = new NSAligner();
 	}
 	
 	void loadRules() throws Exception {
@@ -92,22 +71,26 @@ public class NSChunker {
 		aBR.close();
 	}
 	
-	NSChunkerRule compileRule(String aRule) throws Exception {
-		String[] aTs = aRule.split("\t");
+	NSChunkerRule compileRule(String aRuleDef) throws Exception {
+		String[] aTs = aRuleDef.split("\t");
 		int aIdx = 0;
 		if(aIdx >= aTs.length || aTs[aIdx].startsWith("//")) {
 			return null;
 		}
 		NSChunkerRule aR = new NSChunkerRule();
+		aR.ruleDef = aRuleDef;
 		aR.pos = aTs[aIdx++];
 		if(aR.pos.startsWith("+")) {
 			aR.pos = aR.pos.substring(1);
 			aR.hardReplacePOS = true;
 		}
-		aR.patternPOS = Pattern.compile(aTs[aIdx++]
+		String aRD = aTs[aIdx++];
+		String aRE = aRD
 				.replaceAll("&", "( [0-9,]+")
-				.replaceAll(";", ")")
-				);
+				.replaceAll(";", " )")
+				.replaceAll("_", "([^_ ]*_|_[^_ ]*)?");
+		System.out.println("R="+aRD+" => RE="+aRE);
+		aR.patternPOS = Pattern.compile(aRE);
 		if(aIdx >= aTs.length || aTs[aIdx].startsWith("//")) {
 			return aR;
 		}
@@ -128,43 +111,113 @@ public class NSChunker {
 		return aR;
 	}
 	
-	public void process(String aTxt) throws Exception {
-		Post aPost = new Post();
-		aTxt = aTxt.replaceAll("["+NSUtils.allapos+"]", "'");
-		aPost.setPostParms("text",aTxt,
-			    "model",model
-			    );
-		
-		System.out.println("##########TAG");
-		String aRep = aPost.send("localhost",8080,"/tag", "utf-8");
-		System.out.println("REP="+aRep);
+	void findSpaCyModel() throws Exception {
+		Get aGet = new Get();
+		System.out.println("MODELS");
+		String aRep = aGet.send("localhost", 8081, "/models", "utf-8");
+		System.out.println(aRep);
 		JSONParser parser = new JSONParser();
-		JSONArray aJSO = (JSONArray)parser.parse(aRep);
-		Vector<NSChunkerWord> aWs = new Vector<NSChunkerWord>();
-		StringBuffer aPosSB = new StringBuffer();
-		int aCountW = 0;
-		for(Object aO : aJSO) {
-			System.out.println("W: "+aO);
-			JSONArray aA = (JSONArray)aO;
-			NSChunkerWord aW = new NSChunkerWord();
-			aW.word = (String)aA.get(0);
-			aW.lemma = (String)aA.get(1);
-			aW.pos = (String)aA.get(2);
-			aW.tag = (String)aA.get(3);
-			aWs.add(aW);
-			aPosSB.append(" "+aCountW+","+aCountW+aW.pos);
-			aCountW++;
+		JSONObject aJSO = (JSONObject)parser.parse(aRep);
+		for(Object aO : aJSO.keySet()) {
+			String aM = (String)aO;
+			if(aM.startsWith(lng+"_")) {
+				if(spaCyModel != null) {
+					System.err.println("ALREADY A MODEL:"+spaCyModel+" / "+aM+" ??");
+				}
+				spaCyModel = aM;
+			}
 		}
-		
-		Vector<NSChunkerChunk> aChunks = buildChunks(aWs,applyRules(aWs,aPosSB.toString()));
-		for(NSChunkerChunk aC : aChunks) {
-			System.out.println(aC.chunk+" "+aC.pos+" F="+aC.hasFem+" P="+aC.hasPlur+" posExt="+aC.posExt);
-		}
+	}
+
+	Thread spaCyTag(final TaggedSent aTS) throws Exception {
+		System.out.println("##########TAG spaCy");
+		Thread aTh = new Thread(new Runnable() {
+			@Override
+			public void run() {
+				try {
+					Post aPost = new Post();
+					String aTxt = aTS.text.replaceAll("["+NSUtils.allapos+"]", "'");
+					aPost.setPostParms("text",aTxt,
+						    "model",spaCyModel
+						    );
+					
+					String aRep = aPost.send("localhost",8081,"/tag", "utf-8");
+					System.out.println("REP="+aRep);
+					JSONParser parser = new JSONParser();
+					JSONArray aJSO = (JSONArray)parser.parse(aRep);
+
+					StringBuffer aPosSB = new StringBuffer();
+					int aCountW = 0;
+					for(Object aO : aJSO) {
+						System.out.println("W: "+aO);
+						JSONArray aA = (JSONArray)aO;
+						NSChunkerWord aW = new NSChunkerWord();
+						aW.word = (String)aA.get(0);
+						aW.lemma = (String)aA.get(1);
+						aW.pos = (String)aA.get(2);
+						aW.tag = (String)aA.get(3);
+						aTS.words.add(aW);
+						aPosSB.append(" "+aCountW+","+aCountW+aW.pos+" ");
+						aCountW++;
+					}
+					aTS.pos = aPosSB.toString();
+				}
+				catch(Throwable t) {
+					t.printStackTrace(System.err);
+				}
+			}
+			
+		},"spaCy");
+		aTh.start();
+		return aTh;
+	}
+	
+	Thread polyglotTag(final TaggedSent aTS) throws Exception {
+		System.out.println("##########TAG polyglot");
+		Thread aTh = new Thread(new Runnable() {
+			@Override
+			public void run() {
+				try {
+					Post aPost = new Post();
+					String aTxt = aTS.text.replaceAll("["+NSUtils.allapos+"]", "'");
+					aPost.setPostParms("text",aTxt,
+							"lng",lng
+							);
+
+					String aRep = aPost.send("localhost",8082,"/tag", "utf-8");
+					System.out.println("REP="+aRep);
+					JSONParser parser = new JSONParser();
+					JSONArray aJSO = (JSONArray)parser.parse(aRep);
+
+					StringBuffer aPosSB = new StringBuffer();
+					int aCountW = 0;
+					for(Object aO : aJSO) {
+						System.out.println("W: "+aO);
+						JSONArray aA = (JSONArray)aO;
+						NSChunkerWord aW = new NSChunkerWord();
+						aW.word = (String)aA.get(0);
+						aW.lemma = "";
+						aW.pos = (String)aA.get(1);
+						aW.tag = "";
+						aTS.words.add(aW);
+						aPosSB.append(" "+aCountW+","+aCountW+aW.pos+" ");
+						aCountW++;
+					}
+					aTS.pos = aPosSB.toString();
+				}
+				catch(Throwable t) {
+					t.printStackTrace(System.err);
+				}
+			}
+
+		},"polyglot");
+		aTh.start();
+		return aTh;
 	}
 	
 	Vector<NSChunkerChunk> buildChunks(Vector<NSChunkerWord> aWs,String aPosStr)  throws Exception {
 		Vector<NSChunkerChunk> aChunks = new Vector<NSChunkerChunk>();
-		String[] aPosToks = aPosStr.trim().split(" ");
+		String[] aPosToks = aPosStr.replaceAll(" +", " ").trim().split(" ");
 		for(String aPosTok : aPosToks) {
 			aChunks.add(buildChunk(aWs, aPosTok));
 		}
@@ -182,7 +235,7 @@ public class NSChunker {
 		for(int p = aS;p<=aE;p++) {
 			NSChunkerWord aW = aWs.elementAt(p);
 			aChunkSB.append(" "+aW.word);
-			aPosSB.append(" "+aW.pos);
+			aPosSB.append(" "+aW.pos+" ");
 			aTagSB.append(" "+aW.tag);
 			if(aW.tag.indexOf("=Plur")>=0) {
 				aChunk.hasPlur = true;
@@ -192,7 +245,7 @@ public class NSChunker {
 			}
 		}
 		aChunk.chunk = aChunkSB.toString().trim();
-		aChunk.posExt = aPosSB.toString().trim();
+		aChunk.posExt = aPosSB.toString().replaceAll(" +", " ").trim();
 		aChunk.tagExt = aTagSB.toString().trim();
 		return aChunk;
 	}
@@ -201,12 +254,15 @@ public class NSChunker {
 		System.out.println(aPosStr);
 		for(Vector<NSChunkerRule> aRules : ruleLayers) {
 			for(int r = 0;r < aRules.size();r++) {
-				String aNew = applyRule(aWs,aRules.elementAt(r),aPosStr);
+				NSChunkerRule aR = aRules.elementAt(r);
+				String aNew = applyRule(aWs,aR,aPosStr);
 				if(aNew != null) {
 					//Something rewritten, need to restart
-					r= 0;
+					r = -1;
 					aPosStr = aNew;
-					System.out.println(aPosStr);
+					System.out.println("R="+aR.ruleDef);
+					System.out.println(aPosStr
+							+"\n-----");
 				}
 			}
 		}
@@ -220,14 +276,13 @@ public class NSChunker {
 			String[] aCPs = aChunk.trim().split(" ");
 			int aS = Integer.parseInt(aCPs[0].replaceAll(",.*", ""));
 			int aE = Integer.parseInt(aCPs[aCPs.length-1].replaceAll("(.*,|[^0-9,]+)", ""));
-			String aPosNew = " "+aS+","+aE+aR.pos;
+			String aPosNew = " "+aS+","+aE+aR.pos+" ";
 			if(aChunk.equals(aPosNew)) {
 				//No change
 				continue;
 			}
+			NSChunkerChunk aC = buildChunk(aWs, aPosNew.trim());
 			if(aR.patternTag != null || aR.patternText != null) {
-				//Need to build a single chunk
-				NSChunkerChunk aC = buildChunk(aWs, aPosNew.trim());
 				if(aR.patternTag != null && !aR.patternTag.matcher(aC.tagExt).matches()){
 					//Ignore
 					continue;
@@ -237,7 +292,8 @@ public class NSChunker {
 					continue;
 				}
 			}
-			System.out.println("ChunkP: '"+aChunk+"' => '"+aPosNew+"'");
+			System.out.println("ChunkP: '"+aChunk+"' => '"+aPosNew+"'\n"
+					+"=>"+aC.chunk);
 			if(aR.hardReplacePOS && aS == aE) {
 				//Hard rewriting of word POS
 				aWs.elementAt(aS).pos = aR.pos;
@@ -249,11 +305,30 @@ public class NSChunker {
 		return null;
 	}
 	
+	public void process(String aTxt) throws Exception {
+		TaggedSent aSpaCyTS = new TaggedSent();
+		aSpaCyTS.text = aTxt;
+		Thread aSpaCyTh = spaCyTag(aSpaCyTS);
+		
+		TaggedSent aPolyglotTS = new TaggedSent();
+		aPolyglotTS.text = aTxt;
+		Thread aPolyglotTh = polyglotTag(aPolyglotTS);
+		
+		aSpaCyTh.join();
+		aPolyglotTh.join();
+		
+		TaggedSent aFusedTS = aligner.fusPos(aSpaCyTS, aPolyglotTS);
+		System.out.println("FUSED POS: "+aFusedTS.pos);
+		
+		Vector<NSChunkerChunk> aChunks = buildChunks(aFusedTS.words,applyRules(aFusedTS.words,aFusedTS.pos));
+		for(NSChunkerChunk aC : aChunks) {
+			System.out.println(aC.chunk+" "+aC.pos+" F="+aC.hasFem+" P="+aC.hasPlur+" posExt="+aC.posExt);
+		}
+	}
+
 	public static void main(String[] args) {
 		try {
-			String aTxt = 
-					"Il y a quatre mois, nous avons acheté des vignes dans l’Oregon. Nous sommes désormais un ­« véritable » vignoble.";
-			new NSChunker("fr").process(aTxt);
+			new NSChunker("fr").process(TestData.text);
 		}
 		catch(Throwable t) {
 			t.printStackTrace(System.err);

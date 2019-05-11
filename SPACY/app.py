@@ -4,7 +4,6 @@ from __future__ import unicode_literals
 import hug
 from hug_middleware_cors import CORSMiddleware
 import spacy
-#import textacy
 
 #MODELS = {
 #    "en_core_web_sm": spacy.load("en_core_web_sm"),
@@ -83,4 +82,4 @@ if __name__ == "__main__":
 
     app = hug.API(__name__)
     app.http.add_middleware(CORSMiddleware(app))
-    waitress.serve(__hug_wsgi__, port=8080)
+    waitress.serve(__hug_wsgi__, port=8081)
