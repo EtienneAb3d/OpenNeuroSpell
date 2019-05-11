@@ -22,7 +22,7 @@ NShunker is using spaCy and polyglot POS-tagger.
   bash start.sh
   cd ..
 ```
-### 2- Test NShunker
+### 2- Test NSChunker
 
 Add Java codes in a Java projet, add <code>json-simple-1.1.1.jar</code> and <code>MindProd-http.jar</code> in the classpath.
 
