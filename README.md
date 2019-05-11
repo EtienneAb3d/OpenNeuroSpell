@@ -24,7 +24,7 @@ NShunker is using spaCy and polyglot POS-tagger.
 ```
 ### 2- Test NSChunker
 
-Add Java codes in a Java projet, add <code>json-simple-1.1.1.jar</code> and <code>MindProd-http.jar</code> in the classpath.
+Add Java codes in a Java project, add <code>json-simple-1.1.1.jar</code> and <code>MindProd-http.jar</code> in the classpath.
 
 Run <code>com.ns.NSChunker.main()</code>. You should get this final chunking:
 
