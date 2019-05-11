@@ -39,6 +39,6 @@ et CONJ F=false P=false posExt=CONJ
 les chefs pâtissiers NOUN F=false P=true posExt=DET NOUN NOUN_ADJ
 sortent VERB F=false P=true posExt=VERB
 de ADP F=false P=false posExt=ADP
-l' ombre des maîtres du salés NOUN F=true P=true posExt=DET NOUN DET NOUN DET NOUN
+l' ombre des maîtres du salé NOUN F=true P=true posExt=DET NOUN DET NOUN DET NOUN
 . PUNCT F=false P=false posExt=PUNCT
 ```
