@@ -12,8 +12,9 @@ LAYER	//=====	spaCy/polyglot balancing
 +PROPN	&PROPN_NUM;	//polyglot easily tag something as NUM while it is not
 +PRON	&PRON_NUM;	//polyglot easily tag something as NUM while it is not
 +ADJ	&VERB_ADJ;	//Keep ADJ
-+VERB	&AUX_VERB;	//Keep VERB
++VERB	(&AUX_VERB;|&VERB_AUX;)	//Keep VERB
 +DET	&DET_X;	//Keep DET
++NOUN	(&NOUN_PROPN;|&PROPN_NOUN;)	//Keep NOUN
 
 LAYER	//  Special single POS update rules ("+" prefix = hard rewriting of word POS)
 
@@ -24,39 +25,51 @@ LAYER	//  Special single POS update rules ("+" prefix = hard rewriting of word P
 HYP	&PUNCT;	.*	-
 QBEG	&PUNCT;	.*	[«“]	//Need to enrich the list
 QEND	&PUNCT;	.*	[»”]	//Need to enrich the list
+QUOT	&PUNCT;	.*	["]	//Need to enrich the list
+
+LAYER	//===== segmentation errors
+
+PROPN	&PROPN;&PUNCT;	.*	.*[eEsS]+ *[)]	//Inclusive writing
+NOUN	&NOUN;&PUNCT;	.*	.*[eEsS] *[)]	//Inclusive writing
+ADJ	&ADJ;&PUNCT;	.*	.*[eEsS] *[)]	//Inclusive writing
 
 LAYER	//=====	Chunking rewriting rules
 
-ADJ	&QBEG;&ADJ;&QEND;	//"« saine »"
-ADJ	&ADJ;(&CONJ;(&ADJ;|&VBN;))+	//"rouge et vert" "jolie et maquillée"
-ADJ	&ADJ;&ADP;(&NUM;|&NOUN;|&ADJ;|&ADP;)*(&NUM;|&NOUN;|&ADJ;)+	//"agés de six mois à quatre ans"
-ADJ	&ADV;+&ADJ;	//"naturellement présente"
+NUM	&NUM;&_SYM_;	//"11 %"
 
-ADV	&QBEG;&ADV;&QEND;	//"« plus »"
+ADJ	(&QBEG;|&QUOT;)&ADJ;(&QEND;|&QUOT;)	//"« saine »"
+ADJ	&ADJ;(&CONJ;?(&ADJ;|&VBN;))+	//"rouge et vert" "jolie et maquillée"
+ADJ	&ADJ;&ADP;(&NUM;|&NOUN;|&ADJ;|&ADP;)*(&NUM;|&NOUN;|&ADJ;)+	//"agés de six mois à quatre ans"
+
+ADV	(&QBEG;|&QUOT;)&ADV;(&QEND;|&QUOT;)	//"« plus »"
 ADV	&ADV;&CONJ;?(&ADV;|&VBN;)	//"plus vite" "vite et bien" "vite fait bien fait"
 ADV	&ADP;&ADV;	//"par ailleurs"
+ADV	&ADV;+&ADJ;	//"naturellement présente" "également paritaires"
 
-ADP	&QBEG;&ADP;&QEND;	//"« près »"
+ADP	(&QBEG;|&QUOT;)&ADP;(&QEND;|&QUOT;)	//"« près »"
 ADP	&ADP;&ADP;	//"en avant" 
 ADP	&ADV;&ADP;	//"plus près"
 
 VBG	&ADP;&PRON;?(&VBG;|&VERB;|&AUX;)	.*	[eE][nN] .*	//"en berçant" "en se berçant"
 VBG	&VBG;(&ADV;|&ADJ;)+	//"en marchant très vite"
 
-VBN	&QBEG;&VBN;&QEND;	//"« marqué »"
+VBN	(&QBEG;|&QUOT;)&VBN;(&QEND;|&QUOT;)	//"« marqué »"
+VBN	&VBN;&CONJ;&VBN;	//"sélectionnées ou  primées"
 
 VBXN	&VBX;(&ADV;|&ADJ;|&AUX;)*&VBN;	//"avoir pris" "avoir été interrogés"
 
-VERB	&QBEG;&VERB;&QEND;	//"« peut »"
+VERB	(&QBEG;|&QUOT;)&VERB;(&QEND;|&QUOT;)	//"« peut »"
 VERB	(&ADV;|&VBN;|&VB;|&VERB;|&AUX;)*(&VERB;|&AUX;)+(&VBN;|&VB;)*	//"a été rapidement mangé" "peuvent être"
 VERB	&VERB;&CONJ;&VERB;	//"commandé et fabriqué"
 
-NOUN	&DET;&_NOUN_;	//One of the tagger confirm a NOUN
-NOUN	&QBEG;&NOUN;&QEND;	//"« IBG »"
+NOUN	(&DET;|&NOUN;)(&_NOUN_;|&_PRON_;|&_PROPN_;|&_X_;)	//One of the tagger confirm a NOUN
+NOUN	(&_NOUN_;|&_PRON_;|&_PROPN_;|&_X_;)(&DET;|&NOUN;)	//One of the tagger confirm a NOUN
+NOUN	&DET;&ADJ;	//"l'humoriste" (wrong tagging?)
+NOUN	(&QBEG;|&QUOT;)&NOUN;(&QEND;|&QUOT;)	//"« IBG »"
 NOUN	&PRON;&VB;	//"au dîner"
 NOUN	&NOUN;&HYP;&ADV;	//"prix-là"
-NOUN	(&NOUN;|&PROPN;|&X;)	//One of the tagger confirm something like a NOUN
-NOUN	(&NOUN;(&ADP;*(&_ADJ_;|&_NUM_;|&_VBN_;)+)*)+	//"papillon vert saturé" "robe en bleu" "Napoléon I"
+NOUN	(&NOUN;|&PROPN;|&X;)	//Something like a NOUN
+NOUN	(&NOUN;(&ADP;*(&ADJ;|&NUM;|&VBN;)+)*)+	//"papillon vert saturé" "robe en bleu" "Napoléon I"
 NOUN	(&DET;|&NUM;|&NOUN;)(&NUM;|&ADJ;|&ADV;|&ADP;|&CONJ;|&NOUN;)*&NOUN;	//"la grande peinture" "le 21 mars"
 NOUN	&NOUN;((&CONJ;|&NUM;)&NOUN;)+	//"Paul et Jacques" "samedi 27 avril"
 NOUN	&NOUN;&HYP;&NOUN;	//"homme - femme"

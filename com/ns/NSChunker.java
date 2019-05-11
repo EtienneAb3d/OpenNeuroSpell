@@ -57,6 +57,7 @@ public class NSChunker {
 				continue;
 			}
 			if(aLine.startsWith("LAYER")) {
+				System.out.println("LAYER");
 				aCurrentRules = new Vector<NSChunkerRule>();
 				ruleLayers.add(aCurrentRules);
 				continue;
@@ -84,28 +85,26 @@ public class NSChunker {
 			aR.pos = aR.pos.substring(1);
 			aR.hardReplacePOS = true;
 		}
-		String aRD = aTs[aIdx++];
-		String aRE = aRD
+		String aRP = aTs[aIdx++];
+		String aRE = aRP
 				.replaceAll("&", "( [0-9,]+")
 				.replaceAll(";", " )")
 				.replaceAll("_", "([^_ ]*_|_[^_ ]*)?");
-		System.out.println("R="+aRD+" => RE="+aRE);
 		aR.patternPOS = Pattern.compile(aRE);
 		if(aIdx >= aTs.length || aTs[aIdx].startsWith("//")) {
+			System.out.println("R="+aRP+" => RE="+aRE);
 			return aR;
 		}
-		aR.patternTag = Pattern.compile(aTs[aIdx++]
-				.replaceAll("&", "( [0-9,]+")
-				.replaceAll(";", ")")
-				);
+		String aRT = aTs[aIdx++];
+		aR.patternTag = Pattern.compile(aRT);
 		if(aIdx >= aTs.length || aTs[aIdx].startsWith("//")) {
+			System.out.println("R="+aRP+" => RE="+aRE+" / "+aRT);
 			return aR;
 		}
-		aR.patternText = Pattern.compile(aTs[aIdx++]
-				.replaceAll("&", "( [0-9,]+")
-				.replaceAll(";", ")")
-				);
+		String aRX = aTs[aIdx++];
+		aR.patternText = Pattern.compile(aRX);
 		if(aIdx >= aTs.length || aTs[aIdx].startsWith("//")) {
+			System.out.println("R="+aRP+" => RE="+aRE+" / "+aRT+" / "+aRX);
 			return aR;
 		}
 		return aR;
@@ -244,7 +243,10 @@ public class NSChunker {
 				aChunk.hasFem = true;
 			}
 		}
-		aChunk.chunk = aChunkSB.toString().trim();
+		aChunk.chunk = aChunkSB.toString()
+				.replaceAll("[(] +", "(")
+				.replaceAll(" +[)]", ")")
+				.trim();
 		aChunk.posExt = aPosSB.toString().replaceAll(" +", " ").trim();
 		aChunk.tagExt = aTagSB.toString().trim();
 		return aChunk;
