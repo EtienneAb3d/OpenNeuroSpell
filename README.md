@@ -7,11 +7,11 @@ NSChunker is a rule-based iterative label rewriter / aggregator. Each rule takes
 
 NSChunker is combining spaCy and polyglot analysers for high quality results.
 
-The first version is available with a draft rule set for french.
+The first version is available with a draft rule set for French.
 
 ### 1- Install and run spaCy and polyglot servers
 
-NShunker is using spaCy and polyglot POS-tagger.
+NSChunker is using spaCy and polyglot POS-tagger.
 ```
   cd SPACY
   bash install.sh
