@@ -95,9 +95,11 @@ public class NSChunker {
 		}
 		String aRP = aTs[aIdx++];
 		String aRE = aRP
+				.replaceAll("&_;", "( [0-9,]+[^ ]* )")//Any POS
+				.replaceAll("_", "([^_ ]*_|_[^_ ]*)?")
 				.replaceAll("&", "( [0-9,]+")
 				.replaceAll(";", " )")
-				.replaceAll("_", "([^_ ]*_|_[^_ ]*)?");
+				;
 		aR.patternPOS = Pattern.compile(aRE);
 		if(aIdx >= aTs.length || aTs[aIdx].startsWith("//")) {
 			System.out.println("R="+aRP+" => RE="+aRE);
