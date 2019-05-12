@@ -7,10 +7,13 @@
 LAYER	//=====	spaCy/polyglot balancing
 
 +CONJ	&CCONJ_CONJ;	//spaCy do not produce POS as universal part of speech tag set
-+VERB	&VERB_NUM;	//polyglot easily tag something as NUM while it is not
-+NOUN	&NOUN_NUM;	//polyglot easily tag something as NUM while it is not
-+PROPN	&PROPN_NUM;	//polyglot easily tag something as NUM while it is not
-+PRON	&PRON_NUM;	//polyglot easily tag something as NUM while it is not
++NUM	&_NUM_;	.*	[0-9.,+-]+	//Yes, it's a NUM
++PUNCT	&_PUNCT_;	.*	[^\w]+	//Yes, it's a PUNCT
++VERB	&VERB_NUM;	.*	[^0-9]+	//polyglot easily tag something as NUM while it is not
++NOUN	&NOUN_NUM;	.*	[^0-9]+	//polyglot easily tag something as NUM while it is not
++PROPN	&PROPN_NUM;	.*	[^0-9]+	//polyglot easily tag something as NUM while it is not
++PRON	&PRON_NUM;	.*	[^0-9]+	//polyglot easily tag something as NUM while it is not
++ADJ	&ADJ_NUM;	.*	[^0-9]+	//polyglot easily tag something as NUM while it is not
 +ADJ	&VERB_ADJ;	//Keep ADJ
 +VERB	(&AUX_VERB;|&VERB_AUX;)	//Keep VERB
 +DET	&DET_X;	//Keep DET
@@ -23,9 +26,9 @@ LAYER	//  Special single POS update rules ("+" prefix = hard rewriting of word P
 +VB	&VERB;	.*VerbForm=Inf.*	//spaCy FR like EN
 +VBX	&AUX;	.*VerbForm=Inf.*	//"avoir" "être"
 HYP	&PUNCT;	.*	-
-QBEG	&PUNCT;	.*	[«“]	//Need to enrich the list
-QEND	&PUNCT;	.*	[»”]	//Need to enrich the list
-QUOT	&PUNCT;	.*	["]	//Need to enrich the list
+QBEG	&_PUNCT_;	.*	[«“]	//Need to enrich the list
+QEND	&_PUNCT_;	.*	[»”]	//Need to enrich the list
+QUOT	&_PUNCT_;	.*	["']	//Need to enrich the list
 
 LAYER	//===== segmentation errors
 
@@ -33,12 +36,14 @@ PROPN	&PROPN;&PUNCT;	.*	.*[eEsS]+ *[)]	//Inclusive writing
 NOUN	&NOUN;&PUNCT;	.*	.*[eEsS] *[)]	//Inclusive writing
 ADJ	&ADJ;&PUNCT;	.*	.*[eEsS] *[)]	//Inclusive writing
 
-LAYER	//=====	Chunking rewriting rules
+LAYER	//=====	Chunking rewriting rules ("/" postfix provides with a list of POS-tags that can be re-desambiguated)
 
 NUM	&NUM;&_SYM_;	//"11 %"
 
+NOUN	&NOUN;&ADV;+(&ADJ;|&VBN;)	//"caractère bien trempé"
+
 ADJ	(&QBEG;|&QUOT;)&ADJ;(&QEND;|&QUOT;)	//"« saine »"
-ADJ	&ADJ;(&CONJ;?(&ADJ;|&VBN;))+	//"rouge et vert" "jolie et maquillée"
+ADJ/ADJ,VBN	&_ADJ_;(&CONJ;?(&_ADJ_;|&_VBN_;))+	//"rouge et vert" "jolie et maquillée"
 ADJ	&ADJ;&ADP;(&NUM;|&NOUN;|&ADJ;|&ADP;)*(&NUM;|&NOUN;|&ADJ;)+	//"agés de six mois à quatre ans"
 
 ADV	(&QBEG;|&QUOT;)&ADV;(&QEND;|&QUOT;)	//"« plus »"
@@ -59,19 +64,24 @@ VBN	&VBN;&CONJ;&VBN;	//"sélectionnées ou  primées"
 VBXN	&VBX;(&ADV;|&ADJ;|&AUX;)*&VBN;	//"avoir pris" "avoir été interrogés"
 
 VERB	(&QBEG;|&QUOT;)&VERB;(&QEND;|&QUOT;)	//"« peut »"
-VERB	(&ADV;|&VBN;|&VB;|&VERB;|&AUX;)*(&VERB;|&AUX;)+(&VBN;|&VB;)*	//"a été rapidement mangé" "peuvent être"
+VERB	(&ADV;|&VBN;|&VB;|&VERB;|&AUX;)*(&VERB;|&AUX;)+(&VB;|&VBN;|&VBX;|&VBXN;)*	//"a été rapidement mangé" "peuvent être"
 VERB	&VERB;&CONJ;&VERB;	//"commandé et fabriqué"
+VERB/AUX	&_AUX_;&VBN;	//One of the taggers confirm an AUX
 
-NOUN	(&DET;|&NOUN;)(&_NOUN_;|&_PRON_;|&_PROPN_;|&_X_;)	//One of the tagger confirm a NOUN
-NOUN	(&_NOUN_;|&_PRON_;|&_PROPN_;|&_X_;)(&DET;|&NOUN;)	//One of the tagger confirm a NOUN
+PRON	&QUOT;&PRON;&QUOT;
+
+PROPN	&QUOT;&PROPN;&QUOT;
+PROPN	&PROPN;+
+
+NOUN	(&NOUN;|&PROPN;)	//Something like a NOUN
+NOUN/NOUN,PRON,PROPN,X	(&DET;|&NOUN;)(&_NOUN_;|&_PRON_;|&_PROPN_;|&_X_;)	//One of the taggers confirm a NOUN
+NOUN/NOUN,PRON,PROPN,X	(&_NOUN_;|&_PRON_;|&_PROPN_;|&_X_;)&NOUN;	//One of the taggers confirm a NOUN
 NOUN	&DET;&ADJ;	//"l'humoriste" (wrong tagging?)
 NOUN	(&QBEG;|&QUOT;)&NOUN;(&QEND;|&QUOT;)	//"« IBG »"
 NOUN	&PRON;&VB;	//"au dîner"
 NOUN	&NOUN;&HYP;&ADV;	//"prix-là"
-NOUN	(&NOUN;|&PROPN;|&X;)	//Something like a NOUN
 NOUN	(&NOUN;(&ADP;*(&ADJ;|&NUM;|&VBN;)+)*)+	//"papillon vert saturé" "robe en bleu" "Napoléon I"
 NOUN	(&DET;|&NUM;|&NOUN;)(&NUM;|&ADJ;|&ADV;|&ADP;|&CONJ;|&NOUN;)*&NOUN;	//"la grande peinture" "le 21 mars"
 NOUN	&NOUN;((&CONJ;|&NUM;)&NOUN;)+	//"Paul et Jacques" "samedi 27 avril"
 NOUN	&NOUN;&HYP;&NOUN;	//"homme - femme"
 NOUN	(&ADJ;|&NUM;)+&NOUN;	//"premier parti" "deux verres"
-

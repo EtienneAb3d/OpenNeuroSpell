@@ -2,6 +2,7 @@ package com.ns;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
+import java.util.Arrays;
 import java.util.Vector;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -21,11 +22,13 @@ public class NSChunker {
 		String tagExt = null;
 		boolean hasFem = false;
 		boolean hasPlur = false;
+		Vector<NSChunkerWord> words = new Vector<NSChunkerWord>();
 	}
 	
 	class NSChunkerRule{
 		String ruleDef = null;
 		boolean hardReplacePOS = false;
+		Vector<String> desambiguates = new Vector<String>();
 		Pattern patternPOS = null;
 		Pattern patternTag = null;
 		Pattern patternText = null;
@@ -81,6 +84,11 @@ public class NSChunker {
 		NSChunkerRule aR = new NSChunkerRule();
 		aR.ruleDef = aRuleDef;
 		aR.pos = aTs[aIdx++];
+		int aSlash = aR.pos.indexOf('/');
+		if(aSlash > 0) {
+			aR.desambiguates.addAll(Arrays.asList(aR.pos.substring(aSlash+1).split(",")));
+			aR.pos = aR.pos.substring(0,aSlash);
+		}
 		if(aR.pos.startsWith("+")) {
 			aR.pos = aR.pos.substring(1);
 			aR.hardReplacePOS = true;
@@ -233,6 +241,7 @@ public class NSChunker {
 		StringBuffer aTagSB = new StringBuffer();
 		for(int p = aS;p<=aE;p++) {
 			NSChunkerWord aW = aWs.elementAt(p);
+			aChunk.words.add(aW);
 			aChunkSB.append(" "+aW.word);
 			aPosSB.append(" "+aW.pos+" ");
 			aTagSB.append(" "+aW.tag);
@@ -250,6 +259,17 @@ public class NSChunker {
 		aChunk.posExt = aPosSB.toString().replaceAll(" +", " ").trim();
 		aChunk.tagExt = aTagSB.toString().trim();
 		return aChunk;
+	}
+	
+	void desambiguate(Vector<NSChunkerWord> aWs,Vector<String> aDs) throws Exception {
+		for(NSChunkerWord aW : aWs) {
+			for(String aD : aDs) {
+				if(aW.pos.matches("([^_]+_"+aD+"|"+aD+"_[^_]+)")) {
+					aW.pos = aD;
+					break;
+				}
+			}
+		}
 	}
 	
 	String applyRules(Vector<NSChunkerWord> aWs,String aPosStr) throws Exception {
@@ -294,6 +314,9 @@ public class NSChunker {
 					continue;
 				}
 			}
+			if(aR.desambiguates.size() > 0) {
+				desambiguate(aC.words,aR.desambiguates);
+			}
 			System.out.println("ChunkP: '"+aChunk+"' => '"+aPosNew+"'\n"
 					+"=>"+aC.chunk);
 			if(aR.hardReplacePOS && aS == aE) {
@@ -323,8 +346,17 @@ public class NSChunker {
 		System.out.println("FUSED POS: "+aFusedTS.pos);
 		
 		Vector<NSChunkerChunk> aChunks = buildChunks(aFusedTS.words,applyRules(aFusedTS.words,aFusedTS.pos));
+
+		System.out.println("__________\n"
+				+ "Desambiguations:");
+		for(NSChunkerWord aW : aFusedTS.words) {
+			System.out.println(aW.word+"\t"+aW.posOrig+"\t=>\t"+aW.pos);
+		}
+
+		System.out.println("__________\n"
+				+ "Chunks:");
 		for(NSChunkerChunk aC : aChunks) {
-			System.out.println(aC.chunk+" "+aC.pos+" F="+aC.hasFem+" P="+aC.hasPlur+" posExt="+aC.posExt);
+			System.out.println(aC.chunk+"\t"+aC.pos+" F="+aC.hasFem+" P="+aC.hasPlur+" posExt="+aC.posExt);
 		}
 	}
 

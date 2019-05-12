@@ -1,5 +1,5 @@
 package com.ns;
 
 public class TestData {
-	static final String text = "Paris se rue sur le sucré, et les chefs pâtissiers sortent de l'ombre des maîtres du salé.";
+	static final String text = "Le président du CCR souligne cependant que ce premier pas doit être suivi par des « actions engagées, transparentes et soutenues » des parties yéménites pour qu’elles s'acquittent pleinement de leurs obligations.";
 }

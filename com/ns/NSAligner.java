@@ -95,6 +95,7 @@ public class NSAligner {
 		StringBuffer aPosSB = new StringBuffer();
 		for(int w = 0;w < aFused.words.size();w++) {
 			NSChunkerWord aW = aFused.words.elementAt(w);
+			aW.posOrig = aW.pos;
 			aPosSB.append(" "+w+","+w+aW.pos+" ");
 			System.out.println("FUSED: "+aW.word+"\t("+aW.pos+")\t"+aW.lemma+"\t"+aW.tag);
 		}
