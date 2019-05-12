@@ -29,16 +29,66 @@ Add Java codes in a Java project, add <code>json-simple-1.1.1.jar</code> and <co
 Run <code>com.ns.NSChunker.main()</code>. You should get this final chunking:
 
 ```
-Paris NOUN F=false P=false posExt=PROPN
-se PRON F=false P=false posExt=PRON
-rue VERB F=false P=false posExt=VERB
-sur ADP F=false P=false posExt=ADP
-le sucré NOUN F=false P=false posExt=DET NOUN
-, PUNCT F=false P=false posExt=PUNCT
-et CONJ F=false P=false posExt=CONJ
-les chefs pâtissiers NOUN F=false P=true posExt=DET NOUN NOUN_ADJ
-sortent VERB F=false P=true posExt=VERB
-de ADP F=false P=false posExt=ADP
-l' ombre des maîtres du salé NOUN F=true P=true posExt=DET NOUN DET NOUN DET NOUN
-. PUNCT F=false P=false posExt=PUNCT
+__________
+Desambiguations:
+Le	DET	=>	DET
+président	NOUN	=>	NOUN
+du	DET	=>	DET
+CCR	CCONJ_PROPN	=>	PROPN
+souligne	VERB	=>	VERB
+cependant	ADV	=>	ADV
+que	SCONJ	=>	SCONJ
+ce	DET	=>	DET
+premier	ADJ	=>	ADJ
+pas	ADV_NOUN	=>	NOUN
+doit	VERB_AUX	=>	VERB
+être	AUX	=>	VBX
+suivi	VERB	=>	VBN
+par	ADP	=>	ADP
+des	DET	=>	DET
+«	ADJ_PUNCT	=>	PUNCT
+actions	NOUN	=>	NOUN
+engagées	VERB_ADJ	=>	ADJ
+,	PUNCT	=>	PUNCT
+transparentes	ADJ	=>	ADJ
+et	CCONJ_CONJ	=>	CONJ
+soutenues	ADJ_VERB	=>	ADJ
+»	ADP_PUNCT	=>	PUNCT
+des	DET	=>	DET
+parties	NOUN	=>	NOUN
+yéménites	ADJ	=>	ADJ
+pour	ADP	=>	ADP
+qu'	SCONJ	=>	SCONJ
+elles	PRON	=>	PRON
+s'	PRON	=>	PRON
+acquittent	VERB	=>	VERB
+pleinement	ADV	=>	ADV
+de	ADP	=>	ADP
+leurs	DET	=>	DET
+obligations	NOUN	=>	NOUN
+.	PUNCT	=>	PUNCT
+__________
+Chunks:
+Le président du CCR	NOUN F=false P=false posExt=DET NOUN DET PROPN
+souligne	VERB F=false P=false posExt=VERB
+cependant	ADV F=false P=false posExt=ADV
+que	SCONJ F=false P=false posExt=SCONJ
+ce premier pas	NOUN F=false P=false posExt=DET ADJ NOUN
+doit être suivi	VERB F=false P=false posExt=VERB VBX VBN
+par	ADP F=false P=false posExt=ADP
+des	DET F=false P=true posExt=DET
+«	QBEG F=true P=true posExt=PUNCT
+actions engagées	NOUN F=true P=true posExt=NOUN ADJ
+,	PUNCT F=false P=false posExt=PUNCT
+transparentes et soutenues	ADJ F=true P=true posExt=ADJ CONJ ADJ
+»	QEND F=false P=false posExt=PUNCT
+des parties yéménites	NOUN F=true P=true posExt=DET NOUN ADJ
+pour	ADP F=false P=false posExt=ADP
+qu'	SCONJ F=false P=false posExt=SCONJ
+elles	PRON F=true P=true posExt=PRON
+s'	PRON F=false P=false posExt=PRON
+acquittent	VERB F=false P=true posExt=VERB
+pleinement de	ADP F=false P=false posExt=ADV ADP
+leurs obligations	NOUN F=true P=true posExt=DET NOUN
+.	PUNCT F=false P=false posExt=PUNCT
 ```
