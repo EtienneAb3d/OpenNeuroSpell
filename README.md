@@ -3,7 +3,7 @@ OpenNeuroSpell contains parts of NeuroSpell (http://neurospell.com/en.php) relea
 
 ## A- NSChunker
 
-NSChunker is combining spaCy and polyglot analysers for high quality chunking, POS re-desambiguation, and entities extraction.
+NSChunker is combining spaCy and polyglot analysers for high quality chunking, POS re-disambiguation, and entities extraction.
 
 NSChunker is a rule-based iterative label rewriter / aggregator. Each rule takes into account the POS-tagging, the extended TAG, and the text of words. Rules are organised in independant layers.
 
