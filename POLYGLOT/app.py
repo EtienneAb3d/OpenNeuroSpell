@@ -10,10 +10,24 @@ def tag(
     text: str,
     lng: str,
 ):
+    print("TAG=====")
     print("TEXT="+text)
     print("LNG="+lng)
-    text = Text(text, hint_language_code=lng)
-    return text.pos_tags
+    sent = Text(text, hint_language_code=lng)
+    return sent.pos_tags
+
+@hug.post("/ent")
+def ent(
+    text: str,
+    lng: str,
+):
+    print("ENT=====")
+    print("TEXT="+text)
+    print("LNG="+lng)
+    sents = Text(text, hint_language_code=lng)
+    return [{"ent": ent, "label": ent.tag}
+        for ent in sents.entities
+    ]
 
 if __name__ == "__main__":
     import waitress

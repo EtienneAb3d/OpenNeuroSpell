@@ -99,7 +99,7 @@ public class NSAligner {
 			aPosSB.append(" "+w+","+w+aW.pos+" ");
 			System.out.println("FUSED: "+aW.word+"\t("+aW.pos+")\t"+aW.lemma+"\t"+aW.tag);
 		}
-		aFused.pos = aPosSB.toString();
+		aFused.idxPos = aPosSB.toString();
 		
 		return aFused;
 	}

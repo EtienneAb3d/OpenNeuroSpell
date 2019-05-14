@@ -3,7 +3,7 @@ OpenNeuroSpell contains parts of NeuroSpell (http://neurospell.com/en.php) relea
 
 ## A- NSChunker
 
-NSChunker is combining spaCy and polyglot analysers for high quality chunking and POS re-desambiguation.
+NSChunker is combining spaCy and polyglot analysers for high quality chunking, POS re-desambiguation, and entities extraction.
 
 NSChunker is a rule-based iterative label rewriter / aggregator. Each rule takes into account the POS-tagging, the extended TAG, and the text of words. Rules are organised in independant layers.
 
@@ -30,65 +30,52 @@ Run <code>com.ns.NSChunker.main()</code>. You should get this final chunking:
 
 ```
 __________
-Desambiguations:
-Le	DET	=>	DET
-président	NOUN	=>	NOUN
-du	DET	=>	DET
-CCR	CCONJ_PROPN	=>	PROPN
-souligne	VERB	=>	VERB
-cependant	ADV	=>	ADV
-que	SCONJ	=>	SCONJ
-ce	DET	=>	DET
-premier	ADJ	=>	ADJ
-pas	ADV_NOUN	=>	NOUN
-doit	VERB_AUX	=>	VERB
-être	AUX	=>	VBX
-suivi	VERB	=>	VBN
-par	ADP	=>	ADP
-des	DET	=>	DET
-«	ADJ_PUNCT	=>	PUNCT
-actions	NOUN	=>	NOUN
-engagées	VERB_ADJ	=>	ADJ
+Disambiguations:
+À	ADP	=>	ADP
+Saint	PROPN_NOUN	=>	PROPN
+-	PUNCT	=>	PROPN
+Nazaire	NOUN_PROPN	=>	PROPN
 ,	PUNCT	=>	PUNCT
-transparentes	ADJ	=>	ADJ
-et	CCONJ_CONJ	=>	CONJ
-soutenues	ADJ_VERB	=>	ADJ
-»	ADP_PUNCT	=>	PUNCT
-des	DET	=>	DET
-parties	NOUN	=>	NOUN
-yéménites	ADJ	=>	ADJ
-pour	ADP	=>	ADP
-qu'	SCONJ	=>	SCONJ
-elles	PRON	=>	PRON
-s'	PRON	=>	PRON
-acquittent	VERB	=>	VERB
-pleinement	ADV	=>	ADV
+sept	NUM	=>	NUM
+salariés	NOUN	=>	NOUN
 de	ADP	=>	ADP
-leurs	DET	=>	DET
-obligations	NOUN	=>	NOUN
+l'	DET	=>	DET
+entreprise	NOUN	=>	NOUN
+HPR	PROPN_NUM	=>	PROPN
+,	PUNCT	=>	PUNCT
+filiale	NOUN	=>	NOUN
+française	ADJ	=>	ADJ
+de	ADP	=>	ADP
+la	DET	=>	DET
+société	NOUN	=>	NOUN
+norvégienne	VERB_ADJ	=>	ADJ
+Havyard	PROPN_NUM	=>	PROPN
+ne	ADV	=>	ADV
+sont	AUX	=>	AUX
+plus	ADV	=>	ADV
+payés	VERB	=>	VBN
+depuis	ADP	=>	ADP
+deux	NUM	=>	NUM
+mois	NOUN	=>	NOUN
 .	PUNCT	=>	PUNCT
 __________
 Chunks:
-Le président du CCR	NOUN F=false P=false posExt=DET NOUN DET PROPN
-souligne	VERB F=false P=false posExt=VERB
-cependant	ADV F=false P=false posExt=ADV
-que	SCONJ F=false P=false posExt=SCONJ
-ce premier pas	NOUN F=false P=false posExt=DET ADJ NOUN
-doit être suivi	VERB F=false P=false posExt=VERB VBX VBN
-par	ADP F=false P=false posExt=ADP
-des	DET F=false P=true posExt=DET
-«	QBEG F=true P=true posExt=PUNCT
-actions engagées	NOUN F=true P=true posExt=NOUN ADJ
+À	ADP F=false P=false posExt=ADP
+Saint - Nazaire	PROPN F=false P=false posExt=PROPN PROPN PROPN
 ,	PUNCT F=false P=false posExt=PUNCT
-transparentes et soutenues	ADJ F=true P=true posExt=ADJ CONJ ADJ
-»	QEND F=false P=false posExt=PUNCT
-des parties yéménites	NOUN F=true P=true posExt=DET NOUN ADJ
-pour	ADP F=false P=false posExt=ADP
-qu'	SCONJ F=false P=false posExt=SCONJ
-elles	PRON F=true P=true posExt=PRON
-s'	PRON F=false P=false posExt=PRON
-acquittent	VERB F=false P=true posExt=VERB
-pleinement de	ADP F=false P=false posExt=ADV ADP
-leurs obligations	NOUN F=true P=true posExt=DET NOUN
+sept salariés de l' entreprise HPR	NOUN F=true P=true posExt=NUM NOUN ADP DET NOUN PROPN
+,	PUNCT F=false P=false posExt=PUNCT
+filiale française de la société norvégienne Havyard	NOUN F=true P=false posExt=NOUN ADJ ADP DET NOUN ADJ PROPN
+ne sont plus payés	VERB F=false P=true posExt=ADV AUX ADV VBN
+depuis	ADP F=false P=false posExt=ADP
+deux mois	NOUN F=false P=true posExt=NUM NOUN
 .	PUNCT F=false P=false posExt=PUNCT
+__________
+Extracts:
+Saint - Nazaire	~PROPN F=false P=false posExt=PROPN PROPN PROPN
+salariés de l' entreprise	~NOUN F=true P=true posExt=NOUN ADP DET NOUN
+HPR	~PROPN F=false P=false posExt=PROPN
+filiale française de la société norvégienne	~NOUN F=true P=false posExt=NOUN ADJ ADP DET NOUN ADJ
+Havyard	~PROPN F=false P=false posExt=PROPN
+mois	~NOUN F=false P=true posExt=NOUN
 ```

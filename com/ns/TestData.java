@@ -1,5 +1,6 @@
 package com.ns;
 
 public class TestData {
-	static final String text = "Le président du CCR souligne cependant que ce premier pas doit être suivi par des « actions engagées, transparentes et soutenues » des parties yéménites pour qu’elles s'acquittent pleinement de leurs obligations.";
+	static final String text = 
+			"À Saint-Nazaire, sept salariés de l'entreprise HPR, filiale française de la société norvégienne Havyard ne sont plus payés depuis deux mois. ";
 }

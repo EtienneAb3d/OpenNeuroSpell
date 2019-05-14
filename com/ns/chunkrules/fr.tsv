@@ -3,16 +3,15 @@
 //  LABEL	POS_RE	[TAG_RE]	[TEXT_RE]	[//Comment]
 //
 //  Label "+" prefix enforces hard rewriting of word POS
-//  Label "/" postfix provides with a list of POS-tags that can be re-desambiguated
+//  Label "/" postfix provides with a list of POS-tags that can be re-disambiguated
+//  Label "=" apply modifiers without aggregation
 //
 //  RULE ORDER IS IMPORTANT !
 
+//==================================================
 LAYER	//=====	spaCy/polyglot balancing
 
 +CONJ	&CCONJ_CONJ;	//spaCy do not produce POS as universal part of speech tag set
-
-+NUM	&_;	.*	[0-9.,+-]*[0-9]+[0-9.,+-]*	//Yes, it's a NUM
-+PUNCT	&_PUNCT_;	.*	[^\w]+	//Yes, it's a PUNCT
 
 +NOUN	&NOUN_PUNCT;	.*	[\w]+	//Not a PUNCT
 +PROPN	&PROPN_PUNCT;	.*	[\w]+	//Not a PUNCT
@@ -25,13 +24,20 @@ LAYER	//=====	spaCy/polyglot balancing
 
 +DET	&DET_X;	//Keep DET
 +NOUN	&NOUN_X;	//Keep NOUN
-+PROPN	&PROPN_X;	//Keep PROPN
++PROPN	(&PROPN_X;|&PROPN_NOUN;|&NOUN_PROPN;)	//Keep PROPN
 
 +ADJ	&VERB_ADJ;	//Keep ADJ
 +VERB	(&AUX_VERB;|&VERB_AUX;)	//Keep VERB
 +NOUN	(&NOUN_PROPN;|&PROPN_NOUN;)	//Keep NOUN
 
+//==================================================
 LAYER	//  Special single POS update rules
+
++PROPN	&_;	.*	.*[A-Z].*[A-Z].*	//MultiCaps (full uppercased text must be lowercased first)
+
++SYM	(&_PUNCT_;|&_SYM_;)	.*	[€$£%§#]	//Yes, it's a SYM
++NUM	&_;	.*	[0-9.,+-]*[0-9/]+[0-9.,+-]*	//Yes, it's a NUM
++PUNCT	&_PUNCT_;	.*	[^\w]+	//Yes, it's a PUNCT
 
 +VBG	&VERB;	.*Tense=Pres.*VerbForm=Part.*	//spaCy FR like EN
 +VBN	&VERB;	.*Tense=Past.*VerbForm=Part.*	//spaCy FR like EN
@@ -43,18 +49,30 @@ LAYER	//  Special single POS update rules
 +QUOT	&_;	.*	["']	//Need to enrich the list
 +SLSH	&_;	.*	[/]
 
+//==================================================
+LAYER	//  Special multi POS update/disambiguation rules
+
+=/NOUN	&DET;&_NOUN_;	//Keep NOUN without aggregation: "le test"
+=/VERB	&_VERB_;&HYP;?(&DET;|&PRON;)	//Keep VERB without aggregation: "Vérifier la" "Rassurez-vous"
+
+//==================================================
 LAYER	//===== segmentation errors
 
 PROPN	&PROPN;&PUNCT;	.*	.*[(] *[eEsS]+ *[)]	//Inclusive writing
 NOUN	&NOUN;&PUNCT;	.*	.*[(] *[eEsS] *[)]	//Inclusive writing
 ADJ	&ADJ;&PUNCT;	.*	.*[(] *[eEsS] *[)]	//Inclusive writing
 
+//==================================================
 LAYER	//=====	Chunking rewriting rules
 
-NUM	&NUM;&_SYM_;	//"11 %"
+NUM	&NUM;&SPACE;?&_SYM_;	//"11 %"
+
+PRON	&ADP;&PRON;	.*	.* (qui|quoi)	//"de qui" "avec quoi"
 
 NOUN	&NOUN;&ADV;+(&ADJ;|&VBN;)	//"caractère bien trempé"
 
+VERB	&ADV;&PRON;?(&AUX;|&VERB;)&ADV;	.*	ne .* pas	//"ne s'agit pas"
+VERB	&ADV;(&AUX;|&VERB;)&PRON;?&VB;	.*	ne .*	//"ne peut se satisfaire"
 VERB	(&QBEG;|&QUOT;)&VERB;(&QEND;|&QUOT;)	//"« peut »"
 VERB	(&ADV;|&VBN;|&VB;|&VERB;|&AUX;)*(&VERB;|&AUX;)+(&ADV;*(&VB;|&VBN;|&VBX;|&VBXN;))*	//"a été rapidement mangé" "peuvent être" "ne seraient pas"
 VERB	&VERB;&CONJ;&VERB;	//"commandé et fabriqué"
@@ -71,6 +89,7 @@ ADV	&ADV;+&ADJ;	//"naturellement présente" "également paritaires"
 ADP	(&QBEG;|&QUOT;)&ADP;(&QEND;|&QUOT;)	//"« près »"
 ADP	&ADP;&ADP;	//"en avant" 
 ADP	&ADV;&ADP;	//"plus près"
+ADP	&ADP;&VB;?&DET;	.*	.* (de|du)	//"près de" "à partir du" "à compter de"
 
 VBG	&ADP;&PRON;?(&VBG;|&VERB;|&AUX;)	.*	[eE][nN] .*	//"en berçant" "en se berçant"
 VBG	&VBG;(&ADV;|&ADJ;)+	//"en marchant très vite"
@@ -87,15 +106,35 @@ PRON	&QUOT;&PRON;&QUOT;
 PROPN	&QUOT;&PROPN;&QUOT;
 PROPN	&PROPN;+
 
-NOUN	(&NOUN;|&PROPN;)	//Something like a NOUN
-NOUN/NOUN,PROPN,X	(&DET;|&NOUN;)(&_NOUN_;|&_PROPN_;|&_X_;)	//One of the taggers confirm a NOUN
-NOUN/NOUN,PROPN,X	(&_NOUN_;|&_PROPN_;|&_X_;)&NOUN;	//One of the taggers confirm a NOUN
-NOUN	&DET;&ADJ;	//"l'humoriste" (wrong tagging?)
+NOUN	&VBN;&ADP;&NOUN;	.*	.* (en|de) .*	//"mise en scène" "prise de bec"
+
+PROPN/+.*>PROPN	&PROPN;&ADP;&DET;?&PROPN;	.*	.* (de|en) .*	//"Théâtre de la Michodière"
+PROPN/+.*>PROPN	&PROPN;((&DET;|&HYP;)*(&PROPN;|&NOUN;))+	//
+PROPN/+VB[NG]>PROPN	&PROPN;(&VB;|&VBN;|&VBG;)	//Typical enterprise name ?
+
+NOUN/ADJ>NOUN	&DET;&ADJ;	//"l'humoriste" (wrong tagging?)
+
+NOUN	(&NUM;&SPACE;)*&NOUN;(&SPACE;&NUM;)*	//Fuse NBSP "2 h 30"
+
+NOUN/NOUN,PROPN,X	(&DET;|&NOUN;)(&_NOUN_;|&_PROPN_;|&_X_;)	//Disambiguate
+NOUN/NOUN,PROPN,X	(&_NOUN_;|&_PROPN_;|&_X_;)&NOUN;	//Disambiguate
+PROPN/NOUN,PROPN,X	(&_NOUN_;|&_PROPN_;|&_X_;)&PROPN;	//Disambiguate
+NOUN/NOUN	(&NOUN;&ADP;&_NOUN_;|&_NOUN_;&ADP;&NOUN;)	//Disambiguate "instruction de prélèvement"
+NOUN/NOUN,PROPN	(&NOUN;(&HYP;|&SLSH;|&CONJ;)(&_NOUN_;|&_PROPN_;)|(&_NOUN_;|&_PROPN_;)(&HYP;|&SLSH;|&CONJ;)&NOUN;)	//Disambiguate "homme - femme"
+PROPN/NOUN,PROPN	(&PROPN;(&HYP;|&SLSH;|&CONJ;)(&_NOUN_;|&_PROPN_;)|(&_NOUN_;|&_PROPN_;)(&HYP;|&SLSH;|&CONJ;)&PROPN;)	//Disambiguate "Vincent et Robert"
+
 NOUN	(&QBEG;|&QUOT;)&NOUN;(&QEND;|&QUOT;)	//"« IBG »"
 NOUN	&PRON;&VB;	//"au dîner"
 NOUN	&NOUN;&HYP;&ADV;	//"prix-là"
-NOUN	(&NOUN;(&ADP;*(&ADJ;|&NUM;|&VBN;|&VB;|&ADJ_NOUN;)+)*)+	//"papillon vert saturé" "robe en bleu" "Napoléon I" "pièce à peindre"
+NOUN	(&NOUN;(&ADP;*(&ADJ;|&NUM;|&VBN;|&VB;|&ADJ_NOUN;|&DET_ADJ;)+)*)+	//"papillon vert saturé" "robe en bleu" "Napoléon I" "pièce à peindre"
 NOUN	(&DET;|&NUM;|&NOUN;)(&NUM;|&ADJ;|&ADV;|&ADP;|&NOUN;)*&NOUN;	//"la grande peinture" "le 21 mars"
-NOUN	&NOUN;((&CONJ;|&NUM;|&SLSH;)+&NOUN;)+	//"Paul et Jacques" "samedi 27 avril" "Editis / Vivendi"
-NOUN	&NOUN;&HYP;&NOUN;	//"homme - femme"
 NOUN	(&ADJ;|&NUM;)+&NOUN;	//"premier parti" "deux verres"
+
+EXTRACT
+
+
+NOUN	&NOUN;(&HYP;|&SLSH;|&CONJ;|&DET;|&ADP;)*&NOUN;
+NOUN	(&NOUN;(&ADP;*(&ADJ;|&ADV;|&NUM;|&VBN;|&VB;|&ADJ_NOUN;)+)*)+
+
+~PROPN	&PROPN;+	//When here, all possible should have been done, thus should be the final form
+~NOUN	&NOUN;+	//When here, all possible should have been done, thus should be the final form

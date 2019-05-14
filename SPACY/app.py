@@ -57,6 +57,7 @@ def tag(
     text: str,
     model: str,
 ):
+    print("TAG=====")
     print("TEXT="+text)
     print("MODEL="+model)
     nlp = MODELS[model]
@@ -69,6 +70,9 @@ def tag(
 @hug.post("/ent")
 def ent(text: str, model: str):
     """Get entities for displaCy ENT visualizer."""
+    print("ENT=====")
+    print("TEXT="+text)
+    print("MODEL="+model)
     nlp = MODELS[model]
     doc = nlp(text)
     return [

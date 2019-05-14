@@ -2,8 +2,12 @@ package com.ns;
 
 import java.util.Vector;
 
+import com.ns.NSChunker.NSChunkerChunk;
+
 public class TaggedSent {
-	String text = null;
-	String pos = null;
-	Vector<NSChunkerWord> words = new Vector<NSChunkerWord>();
+	public String text = null;
+	public String idxPos = null;
+	public Vector<NSChunkerWord> words = new Vector<NSChunkerWord>();
+	public Vector<NSChunkerChunk> chunks = null;
+	public Vector<NSChunkerChunk> extracts = null;
 }
