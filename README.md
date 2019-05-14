@@ -30,7 +30,7 @@ Run <code>com.ns.NSChunker.main()</code>. You should get this final chunking:
 
 ```
 __________
-Desambiguations:
+Disambiguations:
 Le	DET	=>	DET
 président	NOUN	=>	NOUN
 du	DET	=>	DET
