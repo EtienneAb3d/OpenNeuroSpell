@@ -58,7 +58,7 @@ public class ClientSpacy {
 					StringBuffer aPosSB = new StringBuffer();
 					int aCountW = 0;
 					for(Object aO : aJSO) {
-						System.out.println("W: "+aO);
+						System.out.println("SPW: "+aO);
 						JSONArray aA = (JSONArray)aO;
 						NSChunkerWord aW = new NSChunkerWord();
 						aW.word = (String)aA.get(0);

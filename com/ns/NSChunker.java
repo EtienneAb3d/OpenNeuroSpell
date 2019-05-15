@@ -2,17 +2,19 @@ package com.ns;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Vector;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import org.json.simple.JSONArray;
-import org.json.simple.JSONObject;
-import org.json.simple.parser.JSONParser;
-
-import com.mindprod.http.Get;
-import com.mindprod.http.Post;
+import org.languagetool.AnalyzedSentence;
+import org.languagetool.AnalyzedToken;
+import org.languagetool.AnalyzedTokenReadings;
+import org.languagetool.JLanguageTool;
+import org.languagetool.Languages;
+import org.languagetool.MultiThreadedJLanguageTool;
 
 public class NSChunker {
 	class NSChunkerChunk{
@@ -38,16 +40,19 @@ public class NSChunker {
 	}
 	
 	String lng = null;
-	
+
+	Vector<Vector<NSChunkerRule>> ltLayers = new Vector<Vector<NSChunkerRule>>();
 	Vector<Vector<NSChunkerRule>> ruleLayers = new Vector<Vector<NSChunkerRule>>();
 	Vector<Vector<NSChunkerRule>> ruleExtracts = new Vector<Vector<NSChunkerRule>>();
 
 	NSAligner aligner = null;
-	
+	JLanguageTool langTool = null;
+
 	public NSChunker(String aLng) throws Exception {
 		lng = aLng.toLowerCase();
 		loadRules();
 		aligner = new NSAligner();
+		langTool = new MultiThreadedJLanguageTool(Languages.getLanguageForShortCode(aLng),4);
 	}
 	
 	void loadRules() throws Exception {
@@ -59,6 +64,12 @@ public class NSChunker {
 		while((aLine = aBR.readLine()) != null){
 			aLine = aLine.trim();
 			if(aLine.isEmpty()){
+				continue;
+			}
+			if(aLine.startsWith("LANGUAGETOOL")) {
+				System.out.println("LANGUAGETOOL");
+				aCurrentRules = new Vector<NSChunkerRule>();
+				ltLayers.add(aCurrentRules);
 				continue;
 			}
 			if(aLine.startsWith("LAYER")) {
@@ -136,6 +147,78 @@ public class NSChunker {
 			return aR;
 		}
 		return aR;
+	}
+	
+	Thread ltAnalyseBatch(TaggedSent aTS) throws Exception {
+		Thread aTh = new Thread(new Runnable(){
+			@Override
+			public void run() {
+				try{
+					ArrayList<String> aSents = new ArrayList<String>();
+					String aTxt = aTS.text.replaceAll("["+NSUtils.allapos+"]", "'");
+					aSents.add(aTxt);
+					List<AnalyzedSentence> aASents = langTool.analyzeSentences(aSents);
+					int aCountW = 0;
+					StringBuffer aPosSB = new StringBuffer();
+					for(AnalyzedSentence aAS : aASents) {
+						for(AnalyzedTokenReadings aATR : aAS.getTokens()) {
+								NSChunkerWord aW = new NSChunkerWord();
+								aW.word = aATR.getToken();
+								if(aW.word == null || aW.word.trim().isEmpty()) {
+									//Beg/Start/Spc ?
+									continue;
+								}
+								System.out.println("LTW: "+aATR.toString());
+								StringBuffer aPOSSB = new StringBuffer();
+								StringBuffer aTagSB = new StringBuffer();
+								StringBuffer aLemmaSB = new StringBuffer();
+								for(AnalyzedToken aAT : aATR.getReadings()) {
+									String aPOSTag = aAT.getPOSTag();
+									if(aPOSTag == null || aPOSTag.matches("(SENT_END|PARA_END|<[^>]*>)")) {
+										//Ignore this POS
+										continue;
+									}
+									if(aPOSTag != null && aPOSTag.length() > 0) {
+										aTagSB.append(","+aPOSTag);
+										String aPOS = aPOSTag;
+										if(aPOSTag.indexOf(" ") > 0) {
+											aPOS = aPOSTag.substring(0, aPOSTag.indexOf(" "));
+										}
+										for(NSChunkerRule aR : ltLayers.elementAt(0)) {
+											if(aR.patternPOS.matcher(aPOS).matches()) {
+												if(aR.patternText != null && !aR.patternText.matcher(aW.word).matches()) {
+													//Ignore
+													continue;
+												}
+												if(aR.patternTag != null && !aR.patternTag.matcher(aPOSTag).matches()) {
+													//Ignore
+													continue;
+												}
+												aPOS = aR.pos;
+												break;
+											}
+										}
+										aPOSSB.append(" "+aPOS+" ");
+									}
+									aLemmaSB.append(","+aAT.getLemma());
+								}
+								aW.lemma = aLemmaSB.length() <= 0 ? aLemmaSB.toString() : aLemmaSB.toString().substring(1).trim();
+								aW.pos = aPOSSB.toString().replaceAll(" +", " ");
+								aW.tag = aTagSB.length() <= 0 ? aTagSB.toString() : aTagSB.toString().substring(1).trim();
+								aTS.words.add(aW);
+								aPosSB.append(" "+aCountW+","+aCountW+aW.pos+" ");
+								aCountW++;
+						}
+					}
+					aTS.idxPos = aPosSB.toString();
+				}
+				catch(Throwable t) {
+					t.printStackTrace(System.err);
+				}
+			}
+		},"analyzeBatch");
+		aTh.start();
+		return aTh;
 	}
 	
 	Vector<NSChunkerChunk> buildChunks(Vector<NSChunkerWord> aWs,String aPosStr)  throws Exception {
@@ -272,6 +355,11 @@ public class NSChunker {
 	}
 	
 	public TaggedSent process(String aTxt) throws Exception {
+		
+		TaggedSent aLTTS = new TaggedSent();
+		aLTTS.text = aTxt;
+		Thread aThLTC = ltAnalyseBatch(aLTTS);
+		
 		TaggedSent aSpaCyTS = new TaggedSent();
 		aSpaCyTS.text = aTxt;
 		Thread aSpaCyTh = ClientSpacy.getTagBatch(aSpaCyTS,lng);
@@ -280,10 +368,13 @@ public class NSChunker {
 		aPolyglotTS.text = aTxt;
 		Thread aPolyglotTh = ClientPolyglot.getTagBatch(aPolyglotTS,lng);
 		
+		aThLTC.join();
 		aSpaCyTh.join();
 		aPolyglotTh.join();
 		
-		TaggedSent aFusedTS = aligner.fusPos(aSpaCyTS, aPolyglotTS);
+//		System.out.println("LanguageTool: "+aLTC);
+		
+		TaggedSent aFusedTS = aligner.fusPos(aSpaCyTS, aPolyglotTS,aLTTS);
 		System.out.println("FUSED POS: "+aFusedTS.idxPos);
 		
 		aFusedTS.chunks = buildChunks(aFusedTS.words,applyRules(ruleLayers,aFusedTS.words,aFusedTS.idxPos));

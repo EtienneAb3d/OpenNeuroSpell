@@ -3,7 +3,7 @@ OpenNeuroSpell contains parts of NeuroSpell (http://neurospell.com/en.php) relea
 
 ## A- NSChunker
 
-NSChunker is combining spaCy and polyglot analysers for high quality chunking, POS re-disambiguation, and entities extraction.
+NSChunker is combining spaCy, polyglot, and LanguageTool analysers for POS re-disambiguation, high quality chunking, and entities extraction.
 
 NSChunker is a rule-based iterative label rewriter / aggregator. Each rule takes into account the POS-tagging, the extended TAG, and the text of words. Rules are organised in independant layers.
 
@@ -22,60 +22,108 @@ NSChunker is using spaCy and polyglot POS-tagger.
   bash start.sh
   cd ..
 ```
-### 2- Test NSChunker
+### 2- Install LanguageTool
 
-Add Java codes in a Java project, add <code>json-simple-1.1.1.jar</code> and <code>MindProd-http.jar</code> in the classpath.
+Get all LanguageTool code and its dependencies.
+
+### 3- Test NSChunker
+
+Add Java codes in a Java project. Add all LanguageTool code and its dependencies in the classpath. Add <code>json-simple-1.1.1.jar</code> and <code>MindProd-http.jar</code> in the classpath. 
 
 Run <code>com.ns.NSChunker.main()</code>. You should get this final chunking:
 
 ```
 __________
 Disambiguations:
-À	ADP	=>	ADP
-Saint	PROPN_NOUN	=>	PROPN
--	PUNCT	=>	PROPN
-Nazaire	NOUN_PROPN	=>	PROPN
+Longtemps	ADV	=>	ADV
 ,	PUNCT	=>	PUNCT
-sept	NUM	=>	NUM
-salariés	NOUN	=>	NOUN
-de	ADP	=>	ADP
-l'	DET	=>	DET
-entreprise	NOUN	=>	NOUN
-HPR	PROPN_NUM	=>	PROPN
-,	PUNCT	=>	PUNCT
-filiale	NOUN	=>	NOUN
-française	ADJ	=>	ADJ
-de	ADP	=>	ADP
-la	DET	=>	DET
-société	NOUN	=>	NOUN
-norvégienne	VERB_ADJ	=>	ADJ
-Havyard	PROPN_NUM	=>	PROPN
-ne	ADV	=>	ADV
+les	DET	=>	DET
+gens	NOUN	=>	NOUN
+se	PRON	=>	PRON
 sont	AUX	=>	AUX
-plus	ADV	=>	ADV
-payés	VERB	=>	VBN
-depuis	ADP	=>	ADP
-deux	NUM	=>	NUM
-mois	NOUN	=>	NOUN
+dit	VERB	=>	VBN
+"	PUNCT	=>	QUOT
+on	PRON	=>	PRON
+leur	PRON	=>	PRON
+fait	VERB	=>	VERB
+confiance	NOUN	=>	NOUN
+,	PUNCT	=>	PUNCT
+ils	PRON	=>	PRON
+vont	VERB_AUX	=>	VERB
+bien	ADV	=>	ADV
+trouver	VERB	=>	VB
+quelque	DET	=>	DET
+chose	NOUN	=>	NOUN
+"	PUNCT	=>	QUOT
+et	CCONJ_CONJ	=>	CONJ
+à	ADP	=>	ADP
+la	DET	=>	DET
+COP24	PROPN_NUM	=>	PROPN
+,	PUNCT	=>	PUNCT
+le	DET	=>	DET
+GIEC	NOUN_X	=>	PROPN
+a	AUX	=>	AUX
+dit	VERB	=>	VBN
+qu'	SCONJ	=>	SCONJ
+il	PRON	=>	PRON
+fallait	VERB_AUX	=>	VERB
+revenir	VERB	=>	VB
+sur	ADP	=>	ADP
+les	DET	=>	DET
+accords	NOUN	=>	NOUN
+de	ADP	=>	ADP
+Paris	PROPN	=>	PROPN
+et	CCONJ_CONJ	=>	CONJ
+ne	ADV	=>	ADV
+surtout	ADV	=>	ADV
+pas	ADV	=>	ADV
+dépasser	VERB	=>	VB
++1,5	DET	=>	NUM
+°	NOUN	=>	NOUN
+C	NOUN_NUM	=>	NOUN
+de	ADP	=>	ADP
+température	NOUN	=>	NOUN
 .	PUNCT	=>	PUNCT
 __________
 Chunks:
-À	ADP F=false P=false posExt=ADP
-Saint - Nazaire	PROPN F=false P=false posExt=PROPN PROPN PROPN
+Longtemps	ADV F=false P=false posExt=ADV
 ,	PUNCT F=false P=false posExt=PUNCT
-sept salariés de l' entreprise HPR	NOUN F=true P=true posExt=NUM NOUN ADP DET NOUN PROPN
+les gens	NOUN F=false P=true posExt=DET NOUN
+se	PRON F=false P=false posExt=PRON
+sont dit	VERB F=false P=true posExt=AUX VBN
+"	QUOT F=false P=false posExt=QUOT
+on leur	PRON F=false P=true posExt=PRON PRON
+fait	VERB F=false P=false posExt=VERB
+confiance	NOUN F=true P=false posExt=NOUN
 ,	PUNCT F=false P=false posExt=PUNCT
-filiale française de la société norvégienne Havyard	NOUN F=true P=false posExt=NOUN ADJ ADP DET NOUN ADJ PROPN
-ne sont plus payés	VERB F=false P=true posExt=ADV AUX ADV VBN
-depuis	ADP F=false P=false posExt=ADP
-deux mois	NOUN F=false P=true posExt=NUM NOUN
+ils	PRON F=false P=true posExt=PRON
+vont bien trouver	VERB F=false P=true posExt=VERB ADV VB
+quelque chose	NOUN F=true P=false posExt=DET NOUN
+"	QUOT F=false P=false posExt=QUOT
+et	CONJ F=false P=false posExt=CONJ
+à	ADP F=false P=false posExt=ADP
+la COP24	NOUN F=true P=false posExt=DET PROPN
+,	PUNCT F=false P=false posExt=PUNCT
+le GIEC	NOUN F=false P=false posExt=DET PROPN
+a dit	VERB F=false P=false posExt=AUX VBN
+qu'	SCONJ F=false P=false posExt=SCONJ
+il	PRON F=false P=false posExt=PRON
+fallait revenir	VERB F=false P=false posExt=VERB VB
+sur	ADP F=false P=false posExt=ADP
+les accords de Paris	NOUN F=false P=true posExt=DET NOUN ADP PROPN
+et	CONJ F=false P=false posExt=CONJ
+ne surtout pas	ADV F=false P=false posExt=ADV ADV ADV
+dépasser	VB F=false P=false posExt=VB
++1,5 ° C de température	NOUN F=true P=false posExt=NUM NOUN NOUN ADP NOUN
 .	PUNCT F=false P=false posExt=PUNCT
 __________
 Extracts:
-Saint - Nazaire	~PROPN F=false P=false posExt=PROPN PROPN PROPN
-salariés de l' entreprise	~NOUN F=true P=true posExt=NOUN ADP DET NOUN
-HPR	~PROPN F=false P=false posExt=PROPN
-filiale française de la société norvégienne	~NOUN F=true P=false posExt=NOUN ADJ ADP DET NOUN ADJ
-Havyard	~PROPN F=false P=false posExt=PROPN
-mois	~NOUN F=false P=true posExt=NOUN
+gens	~NOUN F=false P=true posExt=NOUN
+confiance	~NOUN F=true P=false posExt=NOUN
+chose	~NOUN F=true P=false posExt=NOUN
+COP24	~PROPN F=true P=false posExt=PROPN
+GIEC	~PROPN F=false P=false posExt=PROPN
+accords	~NOUN F=false P=true posExt=NOUN
+Paris	~PROPN F=false P=false posExt=PROPN
++1,5 ° C de température	~NOUN F=true P=false posExt=NUM NOUN NOUN ADP NOUN
 ```
