@@ -29,56 +29,73 @@ public class NSAligner {
 					+ (aP12.w1!=null ? aP12.w1.word+"\t("+aP12.w1.pos+")":"????")
 					+ "\t/\t"
 					+ (aP12.w2!=null ? aP12.w2.word+"\t("+aP12.w2.pos+")":"????")
-					+ "\t/\t"
+					+ "\t|\t"
 					+ (aP12.w1!=null ? aP12.w1.lemma + " " + aP12.w1.tag:"????")
 					+ "\t/\t"
-					+ (aP13 != null && aP13.w2 != null ? "("+aP13.w2.pos+") "+ aP13.w2.lemma + " " + aP13.w2.tag:"????")
+					+ (aP13 != null && aP13.w2 != null ? aP13.w2.word + "("+aP13.w2.pos+") "+ aP13.w2.lemma + " " + aP13.w2.tag:"????")
 					);
 
 			if(aP12.w1 == null) {
-				//Ignore ??
+				//Ignore if the reference isn't there
 				continue;
 			}
 
 			NSChunkerWord aW = aP12.w1.clone();
 			aFused.words.add(aW);
 			aW.posOrig = aP12.w1.pos;
+			
+			if(aP13.w2 != null) {
+				//Enrich tag
+				aW.tag += " LR: " + aP13.w2.tag;
+			}
 					
-			if(aP12.w2 == null) {
-				//Ignore mismatch ??
+			if(aP12.w2 == null
+					&& aP13.w2 == null) {
+				//Nothing to match !?
 				continue;
 			}
-			if(!aP12.w1.word.equals(aP12.w2.word)) {
-				//Ignore mismatch ??
+			String aW2 = aP12.w2 == null ? null : aP12.w2.word;
+			String aW3 = aP13.w2 == null ? null : aP13.w2.word;
+			if(!aP12.w1.word.equals(aW2)
+					&& !aP12.w1.word.equals(aW3)) {
+				//Nothing to match !?
 				continue;
 			}
-			if(aP12.w1.pos.equals(aP12.w2.pos)) {
+			String aPos2 = aP12.w2 == null ? null : aP12.w2.pos;
+			String aPos3 = aP13.w2 == null ? null : aP13.w2.pos;
+			if(aP12.w1.pos.equals(aPos2)) {
 				//OK, keep like this
 				continue;
 			}
 			//Merge diff
-			aW.posOrig = aP12.w1.pos + "_" + aP12.w2.pos;
+			aW.posOrig = aP12.w1.pos
+					+ "_" + (aPos2 == null ? "???" : aPos2)
+					+ "_" + (aPos3 == null ? "???" : aPos3);
 
-			if(aP13.w2 != null && aP13.w2.pos != null && !aP13.w2.pos.trim().isEmpty()) {
-				//May be validated by LT
-				if(aP13.w2.pos.indexOf(aP12.w1.pos) >= 0
-						&& aP13.w2.pos.indexOf(aP12.w2.pos) < 0) {
-					//Only 1 is possible
-					continue;
+			if(aPos3 != null) {
+				if(aPos2 != null) {
+					if(aPos3.indexOf(aP12.w1.pos) >= 0
+							&& aPos3.indexOf(aPos2) < 0) {
+						//Only 1 is possible, keep it
+						continue;
+					}
+					if(aPos3.indexOf(aPos2) >= 0
+							&& aPos3.indexOf(aP12.w1.pos) < 0) {
+						//Only 2 is possible, take it
+						aW.pos = aP12.w2.pos;
+						continue;
+					}
 				}
-				if(aP13.w2.pos.indexOf(aP12.w2.pos) >= 0
-						&& aP13.w2.pos.indexOf(aP12.w1.pos) < 0) {
-					//Only 2 is possible
-					aW.pos = aP12.w2.pos;
-					continue;
-				}
-				if(aP13.w2.pos.trim().indexOf(" ") < 0) {
+				if(aPos3.trim().indexOf(" ") < 0) {
 					//Provide with a single possibility, take it !
-					aW.pos = aP13.w2.pos.trim();
+					aW.pos = aPos3.trim().isEmpty()? "UNK" : aP13.w2.pos.trim();
 					continue;
 				}
 			}
-			aW.pos = aP12.w1.pos + "_" + aP12.w2.pos;
+				
+			//Keep only 1 and 2
+			aW.pos = aP12.w1.pos
+					+ (aPos2 == null ? "" : "_" + aPos2);
 		}
 		
 		StringBuffer aPosSB = new StringBuffer();

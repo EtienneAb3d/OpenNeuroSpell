@@ -31,6 +31,8 @@ PUNCT	M
 //==================================================
 LAYER	//=====	spaCy/polyglot simple balancing
 
++SPACE	&_UNK_;	_SP .*	//Certainly a not corresponding segmentation on an NBSP
+
 +CONJ	&CCONJ_CONJ;	//spaCy do not produce POS as universal part of speech tag set
 
 =/NOUN,PROPN	(&NOUN_PUNCT;|&PROPN_PUNCT;)	.*	(?i)[a-z0-9àäâéèëêïîöôùüû]+	//Not a PUNCT (case insensitive regex)
@@ -54,7 +56,7 @@ LAYER	//  Special single POS update rules
 
 +PROPN	&_;	.*	.*[A-Z].*[A-Z].*	//MultiCaps (full uppercased text must be lowercased first)
 
-+SYM	(&_PUNCT_;|&_SYM_;)	.*	[€$£%§#]	//Yes, it's a SYM
++SYM	(&_PUNCT_;|&_SYM_;|&_UNK_;)	.*	[€$£%§#]	//Yes, it's a SYM
 +NUM	&_;	.*	[0-9.,+-/]*[0-9]+[0-9.,+-/]*	//Yes, it's a NUM
 +PUNCT	&_PUNCT_;	.*	(?i)[^a-z0-9àäâéèëêïîöôùüû]+	//Yes, it's a PUNCT
 
@@ -138,9 +140,9 @@ NOUN/ADJ>NOUN	&DET;&ADJ;	//"l'humoriste" (wrong tagging?)
 
 NOUN	(&NUM;&SPACE;)*&NOUN;(&SPACE;&NUM;)*	//Fuse NBSP "2 h 30"
 
-NOUN/NOUN,PROPN,X	(&DET;|&NOUN;)(&_NOUN_;|&_PROPN_;|&_X_;)	//Disambiguate
-NOUN/NOUN,PROPN,X	(&_NOUN_;|&_PROPN_;|&_X_;)&NOUN;	//Disambiguate
-PROPN/NOUN,PROPN,X	(&_NOUN_;|&_PROPN_;|&_X_;)&PROPN;	//Disambiguate
+NOUN/NOUN,PROPN,X	(&DET;|&NOUN;)(&_NOUN_;|&_PROPN_;|&_X_;|&_UNK_;)	//Disambiguate
+NOUN/NOUN,PROPN,X	(&_NOUN_;|&_PROPN_;|&_X_;|&_UNK_;)&NOUN;	//Disambiguate
+PROPN/NOUN,PROPN,X	(&_NOUN_;|&_PROPN_;|&_X_;|&_UNK_;)&PROPN;	//Disambiguate
 NOUN/NOUN	(&NOUN;&ADP;&_NOUN_;|&_NOUN_;&ADP;&NOUN;)	//Disambiguate "instruction de prélèvement"
 NOUN/NOUN,PROPN	(&NOUN;(&HYP;|&SLSH;|&CONJ;)(&_NOUN_;|&_PROPN_;)|(&_NOUN_;|&_PROPN_;)(&HYP;|&SLSH;|&CONJ;)&NOUN;)	//Disambiguate "homme - femme"
 PROPN/NOUN,PROPN	(&PROPN;(&HYP;|&SLSH;|&CONJ;)(&_NOUN_;|&_PROPN_;)|(&_NOUN_;|&_PROPN_;)(&HYP;|&SLSH;|&CONJ;)&PROPN;)	//Disambiguate "Vincent et Robert"
@@ -148,15 +150,18 @@ PROPN/NOUN,PROPN	(&PROPN;(&HYP;|&SLSH;|&CONJ;)(&_NOUN_;|&_PROPN_;)|(&_NOUN_;|&_P
 NOUN	(&QBEG;|&QUOT;)&NOUN;(&QEND;|&QUOT;)	//"« IBG »"
 NOUN	&PRON;&VB;	//"au dîner"
 NOUN	&NOUN;&HYP;&ADV;	//"prix-là"
-NOUN	((&NOUN;|&PROPN;)(&ADP;*(&ADJ;|&NUM;|&VBN;|&VB;|&ADJ_NOUN;|&DET_ADJ;)+)*)+	//"papillon vert saturé" "robe en bleu" "Napoléon I" "pièce à peindre"
+NOUN	((&NOUN;|&PROPN;|&UNK;)(&ADP;*(&ADJ;|&NUM;|&VBN;|&VB;|&ADJ_NOUN;|&DET_ADJ;)+)*)+	//"papillon vert saturé" "robe en bleu" "Napoléon I" "pièce à peindre"
 NOUN	(&DET;|&NUM;|&NOUN;)(&NUM;|&ADJ;|&ADV;|&ADP;|&NOUN;)*&NOUN;	//"la grande peinture" "le 21 mars"
 NOUN	(&ADJ;|&NUM;)+&NOUN;	//"premier parti" "deux verres"
 
 EXTRACT
 
+CONJ/-DET	&CONJ;&DET;	//Remove included DET: "identifiant et (un) mot de passe"
 
+NUM	&NUM;(&ADP;|&HYP;|&SLSH;|&CONJ;)&NUM;	//"8 à 10"
+ADJ	&ADJ;(&ADP;|&HYP;|&SLSH;|&CONJ;)&ADJ;	//"public ou privé"
 NOUN	&NOUN;(&HYP;|&SLSH;|&CONJ;|&DET;|&ADP;)*&NOUN;
 NOUN	&NUM;*(&NOUN;(&ADP;*(&ADJ;|&ADV;|&NUM;|&VBN;|&VB;|&ADJ_NOUN;)+)*)+
 
-~PROPN	&PROPN;+	//When here, all possible should have been done, thus should be the final form
+~PROPN	(&PROPN;|&X;|&UNK;)+	//When here, all possible should have been done, thus should be the final form
 ~NOUN	&NOUN;+	//When here, all possible should have been done, thus should be the final form

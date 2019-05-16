@@ -46,13 +46,13 @@ public class NSChunker {
 	Vector<Vector<NSChunkerRule>> ruleExtracts = new Vector<Vector<NSChunkerRule>>();
 
 	NSAligner aligner = null;
-	JLanguageTool langTool = null;
+	ClientLT lt = null;
 
 	public NSChunker(String aLng) throws Exception {
 		lng = aLng.toLowerCase();
 		loadRules();
 		aligner = new NSAligner();
-		langTool = new MultiThreadedJLanguageTool(Languages.getLanguageForShortCode(aLng),4);
+		lt = new ClientLT(aLng);
 	}
 	
 	void loadRules() throws Exception {
@@ -149,78 +149,6 @@ public class NSChunker {
 		return aR;
 	}
 	
-	Thread ltAnalyseBatch(TaggedSent aTS) throws Exception {
-		Thread aTh = new Thread(new Runnable(){
-			@Override
-			public void run() {
-				try{
-					ArrayList<String> aSents = new ArrayList<String>();
-					String aTxt = aTS.text.replaceAll("["+NSUtils.allapos+"]", "'");
-					aSents.add(aTxt);
-					List<AnalyzedSentence> aASents = langTool.analyzeSentences(aSents);
-					int aCountW = 0;
-					StringBuffer aPosSB = new StringBuffer();
-					for(AnalyzedSentence aAS : aASents) {
-						for(AnalyzedTokenReadings aATR : aAS.getTokens()) {
-								NSChunkerWord aW = new NSChunkerWord();
-								aW.word = aATR.getToken();
-								if(aW.word == null || aW.word.trim().isEmpty()) {
-									//Beg/Start/Spc ?
-									continue;
-								}
-								System.out.println("LTW: "+aATR.toString());
-								StringBuffer aPOSSB = new StringBuffer();
-								StringBuffer aTagSB = new StringBuffer();
-								StringBuffer aLemmaSB = new StringBuffer();
-								for(AnalyzedToken aAT : aATR.getReadings()) {
-									String aPOSTag = aAT.getPOSTag();
-									if(aPOSTag == null || aPOSTag.matches("(SENT_END|PARA_END|<[^>]*>)")) {
-										//Ignore this POS
-										continue;
-									}
-									if(aPOSTag != null && aPOSTag.length() > 0) {
-										aTagSB.append(","+aPOSTag);
-										String aPOS = aPOSTag;
-										if(aPOSTag.indexOf(" ") > 0) {
-											aPOS = aPOSTag.substring(0, aPOSTag.indexOf(" "));
-										}
-										for(NSChunkerRule aR : ltLayers.elementAt(0)) {
-											if(aR.patternPOS.matcher(aPOS).matches()) {
-												if(aR.patternText != null && !aR.patternText.matcher(aW.word).matches()) {
-													//Ignore
-													continue;
-												}
-												if(aR.patternTag != null && !aR.patternTag.matcher(aPOSTag).matches()) {
-													//Ignore
-													continue;
-												}
-												aPOS = aR.pos;
-												break;
-											}
-										}
-										aPOSSB.append(" "+aPOS+" ");
-									}
-									aLemmaSB.append(","+aAT.getLemma());
-								}
-								aW.lemma = aLemmaSB.length() <= 0 ? aLemmaSB.toString() : aLemmaSB.toString().substring(1).trim();
-								aW.pos = aPOSSB.toString().replaceAll(" +", " ");
-								aW.tag = aTagSB.length() <= 0 ? aTagSB.toString() : aTagSB.toString().substring(1).trim();
-								aTS.words.add(aW);
-								aPosSB.append(" "+aCountW+","+aCountW+aW.pos+" ");
-								aCountW++;
-						}
-					}
-					aTS.idxPos = aPosSB.toString();
-				}
-				catch(Throwable t) {
-					t.printStackTrace(System.err);
-				}
-			}
-		},"analyzeBatch");
-		aTh.start();
-		return aTh;
-	}
-	
 	Vector<NSChunkerChunk> buildChunks(Vector<NSChunkerWord> aWs,String aPosStr)  throws Exception {
 		Vector<NSChunkerChunk> aChunks = new Vector<NSChunkerChunk>();
 		String[] aPosToks = aPosStr.replaceAll(" +", " ").trim().split(" ");
@@ -245,6 +173,9 @@ public class NSChunker {
 		int aIdx = aStartIdx;
 		for(int p = aS;p<=aE;p++) {
 			NSChunkerWord aW = aWs.elementAt(p);
+			if(aW.doNotPrint) {
+				continue;
+			}
 			aChunk.words.add(aW);
 			aChunkSB.append(" "+aW.word);
 			aPosSB.append(" "+aW.pos+" ");
@@ -275,6 +206,13 @@ public class NSChunker {
 					String[] aParts = aD.substring(1).split(">");
 					if(aW.pos.matches(aParts[0])) {
 						aW.pos = aParts[1];
+						break;
+					}
+				}
+				else if(aD.startsWith("-")) {
+					String aPos = aD.substring(1);
+					if(aW.pos.matches(aPos)) {
+						aW.doNotPrint = true;
 						break;
 					}
 				}
@@ -358,7 +296,7 @@ public class NSChunker {
 		
 		TaggedSent aLTTS = new TaggedSent();
 		aLTTS.text = aTxt;
-		Thread aThLTC = ltAnalyseBatch(aLTTS);
+		Thread aThLTC = lt.getTagBatch(aLTTS, lng, ltLayers);
 		
 		TaggedSent aSpaCyTS = new TaggedSent();
 		aSpaCyTS.text = aTxt;

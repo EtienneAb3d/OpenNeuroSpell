@@ -6,6 +6,7 @@ public class NSChunkerWord {
 	public String pos = null;
 	public String posOrig = null;
 	public String tag = null;
+	public boolean doNotPrint = false;
 	
 	public NSChunkerWord clone() {
 		NSChunkerWord aW = new NSChunkerWord();
