@@ -22,9 +22,9 @@ ADV	A
 CONJ	C
 PRON	R
 NUM	Y
-VBG	V	V ppp .*
+VBG	V	V ppr .*
 VBN	V	V ppa .*
-VB	V	V ppi .*
+VB	V	V inf .*
 VERB	V
 PUNCT	M
 
@@ -52,7 +52,7 @@ LAYER	//=====	spaCy/polyglot simple balancing
 +NOUN	(&NOUN_PROPN;|&PROPN_NOUN;)	//Keep NOUN
 
 //==================================================
-LAYER	//  Special single POS update rules
+LAYER	//=====	Special single POS update rules
 
 +PROPN	&_;	.*	.*[A-Z].*[A-Z].*	//MultiCaps (full uppercased text must be lowercased first)
 
@@ -71,14 +71,14 @@ LAYER	//  Special single POS update rules
 +SLSH	&_;	.*	[/]
 
 //==================================================
-LAYER	//  Special multi POS update/disambiguation rules
+LAYER	//=====	Special multi POS update/disambiguation rules
 
 =/NOUN,PROPN	&DET;(&_NOUN_;|&_PROPN_;)	//Keep NOUN or PROPN without aggregation: "le test"
 =/NOUN,PROPN	&ADP;(&NOUN_;|&PROPN_;)	//Keep NOUN or PROPN without aggregation (scpaCy choice)
 =/VERB	&_VERB_;&HYP;?(&DET;|&PRON;)	//Keep VERB without aggregation: "Vérifier la" "Rassurez-vous"
 
 //==================================================
-LAYER	//===== segmentation errors
+LAYER	//=====	segmentation errors
 
 PROPN	&PROPN;&PUNCT;	.*	.*[(] *[eEsS]+ *[)]	//Inclusive writing
 NOUN	&NOUN;&PUNCT;	.*	.*[(] *[eEsS] *[)]	//Inclusive writing
@@ -88,15 +88,16 @@ ADJ	&ADJ;&PUNCT;	.*	.*[(] *[eEsS] *[)]	//Inclusive writing
 LAYER	//=====	Chunking rewriting rules
 
 NUM	&NUM;&SPACE;?&_SYM_;	//"11 %"
-NUM	&NUM;((&SPACE;|&CONJ;|&HYP;)*&NUM;)+
+NUM	&PUNCT;&NUM;&PUNCT;	.*	[(].*[)]	//"(3)"
+NUM	&NUM;((&SPACE;|&ADP;|&HYP;|&SLSH;|&PUNCT;|&CONJ;)&NUM;)+	//"8 à 10"
 
 PRON	&PRON;+	//"nous nous"
 PRON	&ADP;&PRON;	.*	.* (qui|quoi)	//"de qui" "avec quoi"
 
 NOUN	&NOUN;&ADV;+(&ADJ;|&VBN;)	//"caractère bien trempé"
 
-VERB	&ADV;&PRON;?(&AUX;|&VERB;)&ADV;	.*	ne .* pas	//"ne s'agit pas"
-VERB	&ADV;(&AUX;|&VERB;)&PRON;?&VB;	.*	ne .*	//"ne peut se satisfaire"
+VERB	&ADV;&PRON;?(&AUX;|&VERB;)&ADV;	.*	n[e'] .* pas	//"ne s'agit pas"
+VERB	&ADV;(&AUX;|&VERB;)&PRON;?&VB;	.*	n[e'] .*	//"ne peut se satisfaire"
 VERB	(&QBEG;|&QUOT;)&VERB;(&QEND;|&QUOT;)	//"« peut »"
 VERB	(&ADV;|&VBN;|&VB;|&VERB;|&AUX;)*(&VERB;|&AUX;)+(&ADV;*(&VB;|&VBN;|&VBX;|&VBXN;))*	//"a été rapidement mangé" "peuvent être" "ne seraient pas"
 VERB	&VERB;&CONJ;&VERB;	//"commandé et fabriqué"
@@ -104,16 +105,17 @@ VERB	&VERB;&CONJ;&VERB;	//"commandé et fabriqué"
 ADJ	(&QBEG;|&QUOT;)&ADJ;(&QEND;|&QUOT;)	//"« saine »"
 ADJ/ADJ,VBN	&_ADJ_;((&CONJ;|&SLSH;)*(&_ADJ_;|&_VBN_;))+	//"rouge et vert" "jolie et maquillée"
 ADJ	&ADJ;&ADP;(&NUM;|&NOUN;|&ADJ;|&ADP;)*(&NUM;|&NOUN;|&ADJ;)+	//"agés de six mois à quatre ans"
+ADJ	&VBG;&ADP;&DET;?&NOUN;	//"contenant du sable" "produisant de la valeur"
+
+ADP	(&QBEG;|&QUOT;)&ADP;(&QEND;|&QUOT;)	//"« près »"
+ADP	&ADP;&ADP;	//"en avant" 
+ADP	&ADV;&ADP;	//"plus près"
+ADP	&ADP;&VB;?(&DET;|&ADP;)	.*	.* d[eu']	//"près de" "à partir du" "à compter de"
 
 ADV	(&QBEG;|&QUOT;)&ADV;(&QEND;|&QUOT;)	//"« plus »"
 ADV	&ADV;(&CONJ;|&SLSH;)*(&ADV;|&VBN;)	//"plus vite" "vite et bien" "vite fait bien fait"
 ADV	&ADP;&ADV;	//"par ailleurs"
 ADV	&ADV;+&ADJ;	//"naturellement présente" "également paritaires"
-
-ADP	(&QBEG;|&QUOT;)&ADP;(&QEND;|&QUOT;)	//"« près »"
-ADP	&ADP;&ADP;	//"en avant" 
-ADP	&ADV;&ADP;	//"plus près"
-ADP	&ADP;&VB;?&DET;	.*	.* (de|du)	//"près de" "à partir du" "à compter de"
 
 VBG	&ADP;&PRON;?(&VBG;|&VERB;|&AUX;)	.*	[eE][nN] .*	//"en berçant" "en se berçant"
 VBG	&VBG;(&ADV;|&ADJ;)+	//"en marchant très vite"
@@ -154,14 +156,22 @@ NOUN	((&NOUN;|&PROPN;|&UNK;)(&ADP;*(&ADJ;|&NUM;|&VBN;|&VB;|&ADJ_NOUN;|&DET_ADJ;)
 NOUN	(&DET;|&NUM;|&NOUN;)(&NUM;|&ADJ;|&ADV;|&ADP;|&NOUN;)*&NOUN;	//"la grande peinture" "le 21 mars"
 NOUN	(&ADJ;|&NUM;)+&NOUN;	//"premier parti" "deux verres"
 
-EXTRACT
+//==================================================
+EXTRACT	//=====	Subset of rules applied after chunking, limited to the content of each chunk
 
 CONJ/-DET	&CONJ;&DET;	//Remove included DET: "identifiant et (un) mot de passe"
 
-NUM	&NUM;(&ADP;|&HYP;|&SLSH;|&CONJ;)&NUM;	//"8 à 10"
+NUM	&NUM;&SPACE;?&_SYM_;	//"11 %"
+NUM	&PUNCT;&NUM;&PUNCT;	.*	[(].*[)]	//"(3)"
+NUM	&NUM;((&SPACE;|&ADP;|&HYP;|&SLSH;|&PUNCT;|&CONJ;)&NUM;)+	//"8 à 10"
+
+ADJ	&VBG;&ADP;&DET;?&NOUN;	//"contenant du sable" "produisant de la valeur"
 ADJ	&ADJ;(&ADP;|&HYP;|&SLSH;|&CONJ;)&ADJ;	//"public ou privé"
+
 NOUN	&NOUN;(&HYP;|&SLSH;|&CONJ;|&DET;|&ADP;)*&NOUN;
 NOUN	&NUM;*(&NOUN;(&ADP;*(&ADJ;|&ADV;|&NUM;|&VBN;|&VB;|&ADJ_NOUN;)+)*)+
+
+PROPN	&PROPN;&NUM;
 
 ~PROPN	(&PROPN;|&X;|&UNK;)+	//When here, all possible should have been done, thus should be the final form
 ~NOUN	&NOUN;+	//When here, all possible should have been done, thus should be the final form

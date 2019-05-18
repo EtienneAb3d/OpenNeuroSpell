@@ -167,12 +167,16 @@ public class NSAligner {
 			return 0;
 		}
 		if(aW1.word.equalsIgnoreCase(aW2.word)) {
-			return 0.1;
+			return 0.01;
+		}
+		if(aW1.word.indexOf(aW2.word) >= 0
+				|| aW1.word.indexOf(aW2.word) >= 0) {
+			return Math.min(aW1.word.length(),aW2.word.length())/Math.max(aW1.word.length(),aW2.word.length());
 		}
 		if(aW1.pos.equalsIgnoreCase(aW2.pos)) {
-			return 0.2;
+			return 1.0;
 		}
-		return 2.0;
+		return 1.0+Math.min(aW1.word.length(),aW2.word.length())/Math.max(aW1.word.length(),aW2.word.length());
 	}
 	
 	public static void main(String[] args) {

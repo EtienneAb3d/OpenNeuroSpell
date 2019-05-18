@@ -1,6 +1,7 @@
 package com.ns;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Vector;
 
@@ -14,11 +15,40 @@ import org.languagetool.MultiThreadedJLanguageTool;
 import com.ns.NSChunker.NSChunkerRule;
 
 public class ClientLT {
+	//Need to manage a pool, because LT is not multi-threads
+	static HashMap<String,Vector<JLanguageTool>> langToolPools = new HashMap<String,Vector<JLanguageTool>>();
 
 	JLanguageTool langTool = null;
+	String lng = null;
 
 	public ClientLT(String aLng) throws Exception {
-		langTool = new MultiThreadedJLanguageTool(Languages.getLanguageForShortCode(aLng),4);
+		lng = aLng;
+		synchronized(langToolPools){
+			Vector<JLanguageTool> langToolPool = langToolPools.get(lng);
+			if(langToolPool == null) {
+				langToolPool = new Vector<JLanguageTool>();
+				langToolPools.put(lng,langToolPool);
+			}
+			if(langToolPool.size() > 0) {
+				langTool = langToolPool.remove(0);
+			}
+			else {
+				langTool = new MultiThreadedJLanguageTool(Languages.getLanguageForShortCode(aLng),4);
+			}
+		}
+	}
+	
+	public void releaseLT() throws Exception {
+		synchronized(langToolPools){
+			Vector<JLanguageTool> langToolPool = langToolPools.get(lng);
+			if(langToolPool == null) {
+				//??
+				langToolPool = new Vector<JLanguageTool>();
+				langToolPools.put(lng,langToolPool);
+			}
+			langToolPool.add(langTool);
+			langTool = null;
+		}
 	}
 	
 	public Thread getTagBatch(final TaggedSent aTS,final String aLng,Vector<Vector<NSChunkerRule>> aLtLayers) throws Exception {

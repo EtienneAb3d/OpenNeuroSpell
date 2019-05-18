@@ -2,34 +2,26 @@ package com.ns;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.List;
 import java.util.Vector;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import org.languagetool.AnalyzedSentence;
-import org.languagetool.AnalyzedToken;
-import org.languagetool.AnalyzedTokenReadings;
-import org.languagetool.JLanguageTool;
-import org.languagetool.Languages;
-import org.languagetool.MultiThreadedJLanguageTool;
-
 public class NSChunker {
 	class NSChunkerChunk{
-		String chunk = null;
-		String pos = null;
-		String idxPos = null;
-		String posExt = null;
-		String tagExt = null;
-		boolean hasFem = false;
-		boolean hasPlur = false;
-		Vector<NSChunkerWord> words = new Vector<NSChunkerWord>();
+		public String chunk = null;
+		public String pos = null;
+		public String idxPos = null;
+		public String posExt = null;
+		public String tagExt = null;
+		public boolean hasFem = false;
+		public boolean hasPlur = false;
+		public Vector<NSChunkerWord> words = new Vector<NSChunkerWord>();
 	}
 	
 	class NSChunkerRule{
 		String ruleDef = null;
+		String patternPOSDef = null;
 		boolean hardReplacePOS = false;
 		Vector<String> desambiguates = new Vector<String>();
 		boolean doNotAggregate = false;
@@ -46,13 +38,11 @@ public class NSChunker {
 	Vector<Vector<NSChunkerRule>> ruleExtracts = new Vector<Vector<NSChunkerRule>>();
 
 	NSAligner aligner = null;
-	ClientLT lt = null;
 
 	public NSChunker(String aLng) throws Exception {
 		lng = aLng.toLowerCase();
 		loadRules();
 		aligner = new NSAligner();
-		lt = new ClientLT(aLng);
 	}
 	
 	void loadRules() throws Exception {
@@ -121,7 +111,7 @@ public class NSChunker {
 			aR.doNotAggregate = true;
 		}
 		String aRP = aTs[aIdx++];
-		String aRE = aRP
+		aR.patternPOSDef = aRP
 				.replaceAll("&_;", "&[^ ]*;")//Any POS
 				.replaceAll("&_", "&([^_ ]*_)?")//One side or all
 				.replaceAll("_;", "(_[^_ ]*)?;")//One side or all
@@ -129,23 +119,29 @@ public class NSChunker {
 				.replaceAll("&", "( [0-9,]+")
 				.replaceAll(";", " )")
 				;
-		aR.patternPOS = Pattern.compile(aRE);
+		aR.patternPOS = Pattern.compile(aR.patternPOSDef);
+		
 		if(aIdx >= aTs.length || aTs[aIdx].startsWith("//")) {
-			System.out.println("R="+aRP+" => RE="+aRE);
+			System.out.println("R="+aRP+" => RE="+aR.patternPOSDef);
 			return aR;
 		}
+		
 		String aRT = aTs[aIdx++];
 		aR.patternTag = Pattern.compile(aRT);
+		
 		if(aIdx >= aTs.length || aTs[aIdx].startsWith("//")) {
-			System.out.println("R="+aRP+" => RE="+aRE+" / "+aRT);
+			System.out.println("R="+aRP+" => RE="+aR.patternPOSDef+" / "+aRT);
 			return aR;
 		}
+		
 		String aRX = aTs[aIdx++];
 		aR.patternText = Pattern.compile(aRX);
+		
 		if(aIdx >= aTs.length || aTs[aIdx].startsWith("//")) {
-			System.out.println("R="+aRP+" => RE="+aRE+" / "+aRT+" / "+aRX);
+			System.out.println("R="+aRP+" => RE="+aR.patternPOSDef+" / "+aRT+" / "+aRX);
 			return aR;
 		}
+		
 		return aR;
 	}
 	
@@ -247,6 +243,7 @@ public class NSChunker {
 		Matcher aM = aR.patternPOS.matcher(aPosStr);
 		while(aM.find()) {
 			String aChunk = aPosStr.substring(aM.start(),aM.end());
+			System.out.println("FOUND CHUNK: ["+aChunk+"] WITH: ["+aR.patternPOSDef+"] R: "+aR.ruleDef+" ON: ["+aPosStr+"]");
 			String[] aCPs = aChunk.trim().split(" ");
 			int aS = Integer.parseInt(aCPs[0].replaceAll(",.*", ""));
 			int aE = Integer.parseInt(aCPs[aCPs.length-1].replaceAll("(.*,|[^0-9,]+)", ""));
@@ -296,7 +293,9 @@ public class NSChunker {
 		
 		TaggedSent aLTTS = new TaggedSent();
 		aLTTS.text = aTxt;
-		Thread aThLTC = lt.getTagBatch(aLTTS, lng, ltLayers);
+		ClientLT aLT = new ClientLT(lng);
+
+		Thread aThLTC = aLT.getTagBatch(aLTTS, lng, ltLayers);
 		
 		TaggedSent aSpaCyTS = new TaggedSent();
 		aSpaCyTS.text = aTxt;
@@ -309,6 +308,8 @@ public class NSChunker {
 		aThLTC.join();
 		aSpaCyTh.join();
 		aPolyglotTh.join();
+		
+		aLT.releaseLT();
 		
 //		System.out.println("LanguageTool: "+aLTC);
 		
