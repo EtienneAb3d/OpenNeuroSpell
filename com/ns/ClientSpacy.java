@@ -10,6 +10,8 @@ import com.mindprod.http.Get;
 import com.mindprod.http.Post;
 
 public class ClientSpacy {
+	static final boolean _DEBUG = false;
+
 	static final HashMap<String,String> model4lng = new HashMap<String,String>();
 	static int port = 8081;
 
@@ -19,9 +21,13 @@ public class ClientSpacy {
 			return aModel;
 		}
 		Get aGet = new Get();
-		System.out.println("MODELS");
+		if(_DEBUG || NSChunker._DEBUG_ALL) {
+			System.out.println("MODELS");
+		}
 		String aRep = aGet.send("localhost", port, "/models", "utf-8");
-		System.out.println(aRep);
+		if(_DEBUG || NSChunker._DEBUG_ALL) {
+			System.out.println(aRep);
+		}
 		JSONParser parser = new JSONParser();
 		JSONObject aJSO = (JSONObject)parser.parse(aRep);
 		for(Object aO : aJSO.keySet()) {
@@ -37,7 +43,9 @@ public class ClientSpacy {
 	}
 
 	public static Thread getTagBatch(final TaggedSent aTS,final String aLng) throws Exception {
-		System.out.println("##########TAG spaCy");
+		if(_DEBUG || NSChunker._DEBUG_ALL) {
+			System.out.println("##########TAG spaCy");
+		}
 		Thread aTh = new Thread(new Runnable() {
 			@Override
 			public void run() {
@@ -51,14 +59,18 @@ public class ClientSpacy {
 						    );
 					
 					String aRep = aPost.send("localhost",8081,"/tag", "utf-8");
-					System.out.println("REP="+aRep);
+					if(_DEBUG || NSChunker._DEBUG_ALL) {
+						System.out.println("REP="+aRep);
+					}
 					JSONParser parser = new JSONParser();
 					JSONArray aJSO = (JSONArray)parser.parse(aRep);
 
 					StringBuffer aPosSB = new StringBuffer();
 					int aCountW = 0;
 					for(Object aO : aJSO) {
-						System.out.println("SPW: "+aO);
+						if(_DEBUG || NSChunker._DEBUG_ALL) {
+							System.out.println("SPW: "+aO);
+						}
 						JSONArray aA = (JSONArray)aO;
 						NSChunkerWord aW = new NSChunkerWord();
 						aW.word = (String)aA.get(0);
@@ -86,18 +98,24 @@ public class ClientSpacy {
 		try {
 			String aModel = ClientSpacy.getModel(aLng);
 			
-			System.out.println("SPACYMODEL="+aLng+"/"+aModel);
+			if(_DEBUG || NSChunker._DEBUG_ALL) {
+				System.out.println("SPACYMODEL="+aLng+"/"+aModel);
+			}
 			
 			Post aPost = new Post();
 			aPost.setPostParms("text",aTxt,
 				    "model",aModel
 				    );
 			String aRep = aPost.send("localhost",ClientSpacy.port,"/ent", "utf-8");
-			System.out.println("SPACYREP="+aRep);
+			if(_DEBUG || NSChunker._DEBUG_ALL) {
+				System.out.println("SPACYREP="+aRep);
+			}
 			JSONParser parser = new JSONParser();
 			JSONArray aJSA = (JSONArray)parser.parse(aRep);
 			for(Object aT : aJSA){
-				System.out.println(aT);
+				if(_DEBUG || NSChunker._DEBUG_ALL) {
+					System.out.println(aT);
+				}
 				JSONObject aO = (JSONObject)aT;
 				int aStart = ((Long)aO.get("start")).intValue();
 				int aEnd = ((Long)aO.get("end")).intValue();
@@ -105,13 +123,19 @@ public class ClientSpacy {
 				String aEnt = aTxt.substring(aStart, aEnd);
 				if(aEnt.toLowerCase().equals(aEnt)){
 					//Ignore lowercased ents
-					System.out.println("SPACYENT: "+aEnt+"/"+aLabel+" IGNORED LC");
+					if(_DEBUG || NSChunker._DEBUG_ALL) {
+						System.out.println("SPACYENT: "+aEnt+"/"+aLabel+" IGNORED LC");
+					}
 					continue;
 				}
-				System.out.println("SPACYENT: "+aEnt+"/"+aLabel);
+				if(_DEBUG || NSChunker._DEBUG_ALL) {
+					System.out.println("SPACYENT: "+aEnt+"/"+aLabel);
+				}
 				aSB.append("\t["+aEnt+"]"+aLabel);
 			}
-			System.out.println("SPACYSTRING="+aSB.toString());
+			if(_DEBUG || NSChunker._DEBUG_ALL) {
+				System.out.println("SPACYSTRING="+aSB.toString());
+			}
 		}
 		catch(Throwable t) {
 			//Ignore all for now
@@ -137,17 +161,23 @@ public class ClientSpacy {
 			Post aPost = new Post();
 			String aModel = getModel(aLng);
 			
-			System.out.println("SPACYMODEL="+aLng+"/"+aModel);
+			if(_DEBUG || NSChunker._DEBUG_ALL) {
+				System.out.println("SPACYMODEL="+aLng+"/"+aModel);
+			}
 			
 			aPost.setPostParms("text",aTxt,
 				    "model",aModel
 				    );
 			String aRep = aPost.send("localhost",port,"/ent", "utf-8");
-			System.out.println("SPACYREP="+aRep);
+			if(_DEBUG || NSChunker._DEBUG_ALL) {
+				System.out.println("SPACYREP="+aRep);
+			}
 			JSONParser parser = new JSONParser();
 			JSONArray aJSA = (JSONArray)parser.parse(aRep);
 			for(Object aT : aJSA){
-				System.out.println(aT);
+				if(_DEBUG || NSChunker._DEBUG_ALL) {
+					System.out.println(aT);
+				}
 				JSONObject aO = (JSONObject)aT;
 				int aStart = ((Long)aO.get("start")).intValue();
 				int aEnd = ((Long)aO.get("end")).intValue();
@@ -155,21 +185,29 @@ public class ClientSpacy {
 				String aEnt = aTxt.substring(aStart, aEnd);
 				if(aEnt.toLowerCase().equals(aEnt)){
 					//Ignore lowercased ents
-					System.out.println("SPACYENT: "+aEnt+"/"+aLabel+" IGNORED LC");
+					if(_DEBUG || NSChunker._DEBUG_ALL) {
+						System.out.println("SPACYENT: "+aEnt+"/"+aLabel+" IGNORED LC");
+					}
 					continue;
 				}
 				if(aLabel.matches("(DATE|TIME|ORDINAL|CARDINAL|PERCENT|MONEY|QUANTITY|LANGUAGE)")){
 					//Ignore lowercased ents
-					System.out.println("SPACYENT: "+aEnt+"/"+aLabel+" IGNORED "+aLabel);
+					if(_DEBUG || NSChunker._DEBUG_ALL) {
+						System.out.println("SPACYENT: "+aEnt+"/"+aLabel+" IGNORED "+aLabel);
+					}
 					continue;
 				}
-				System.out.println("SPACYENT: "+aEnt+"/"+aLabel);
+				if(_DEBUG || NSChunker._DEBUG_ALL) {
+					System.out.println("SPACYENT: "+aEnt+"/"+aLabel);
+				}
 				aSB.append("\t");
 				for(String aW : aEnt.split("[ -]")){
 					aSB.append(" "+aW+"/"+aLabel+"#");
 				}
 			}
-			System.out.println("SPACYSTRING="+aSB.toString());
+			if(_DEBUG || NSChunker._DEBUG_ALL) {
+				System.out.println("SPACYSTRING="+aSB.toString());
+			}
 		}
 		catch(Throwable t) {
 			//Ignore all for now

@@ -8,6 +8,9 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class NSChunker {
+	static final boolean _DEBUG_ALL = true;
+	static final boolean _DEBUG = false;
+	
 	class NSChunkerChunk{
 		public String chunk = null;
 		public String pos = null;
@@ -57,19 +60,25 @@ public class NSChunker {
 				continue;
 			}
 			if(aLine.startsWith("LANGUAGETOOL")) {
-				System.out.println("LANGUAGETOOL");
+				if(_DEBUG || NSChunker._DEBUG_ALL) {
+					System.out.println("LANGUAGETOOL");
+				}
 				aCurrentRules = new Vector<NSChunkerRule>();
 				ltLayers.add(aCurrentRules);
 				continue;
 			}
 			if(aLine.startsWith("LAYER")) {
-				System.out.println("LAYER");
+				if(_DEBUG || NSChunker._DEBUG_ALL) {
+					System.out.println("LAYER");
+				}
 				aCurrentRules = new Vector<NSChunkerRule>();
 				ruleLayers.add(aCurrentRules);
 				continue;
 			}
 			if(aLine.startsWith("EXTRACT")) {
-				System.out.println("EXTRACT");
+				if(_DEBUG || NSChunker._DEBUG_ALL) {
+					System.out.println("EXTRACT");
+				}
 				aCurrentRules = new Vector<NSChunkerRule>();
 				ruleExtracts.add(aCurrentRules);
 //				aIsExtractRule = true;
@@ -122,7 +131,9 @@ public class NSChunker {
 		aR.patternPOS = Pattern.compile(aR.patternPOSDef);
 		
 		if(aIdx >= aTs.length || aTs[aIdx].startsWith("//")) {
-			System.out.println("R="+aRP+" => RE="+aR.patternPOSDef);
+			if(_DEBUG || NSChunker._DEBUG_ALL) {
+				System.out.println("R="+aRP+" => RE="+aR.patternPOSDef);
+			}
 			return aR;
 		}
 		
@@ -130,7 +141,9 @@ public class NSChunker {
 		aR.patternTag = Pattern.compile(aRT);
 		
 		if(aIdx >= aTs.length || aTs[aIdx].startsWith("//")) {
-			System.out.println("R="+aRP+" => RE="+aR.patternPOSDef+" / "+aRT);
+			if(_DEBUG || NSChunker._DEBUG_ALL) {
+				System.out.println("R="+aRP+" => RE="+aR.patternPOSDef+" / "+aRT);
+			}
 			return aR;
 		}
 		
@@ -138,7 +151,9 @@ public class NSChunker {
 		aR.patternText = Pattern.compile(aRX);
 		
 		if(aIdx >= aTs.length || aTs[aIdx].startsWith("//")) {
-			System.out.println("R="+aRP+" => RE="+aR.patternPOSDef+" / "+aRT+" / "+aRX);
+			if(_DEBUG || NSChunker._DEBUG_ALL) {
+				System.out.println("R="+aRP+" => RE="+aR.patternPOSDef+" / "+aRT+" / "+aRX);
+			}
 			return aR;
 		}
 		
@@ -221,7 +236,9 @@ public class NSChunker {
 	}
 	
 	String applyRules(Vector<Vector<NSChunkerRule>> aRuleLayers,Vector<NSChunkerWord> aWs,String aPosStr) throws Exception {
-		System.out.println(aPosStr);
+		if(_DEBUG || NSChunker._DEBUG_ALL) {
+			System.out.println(aPosStr);
+		}
 		for(Vector<NSChunkerRule> aRules : aRuleLayers) {
 			for(int r = 0;r < aRules.size();r++) {
 				NSChunkerRule aR = aRules.elementAt(r);
@@ -230,9 +247,11 @@ public class NSChunker {
 					//Something rewritten, need to restart
 					r = -1;
 					aPosStr = aNew;
-					System.out.println("R="+aR.ruleDef);
-					System.out.println(aPosStr
-							+"\n-----");
+					if(_DEBUG || NSChunker._DEBUG_ALL) {
+						System.out.println("R="+aR.ruleDef);
+						System.out.println(aPosStr
+								+"\n-----");
+					}
 				}
 			}
 		}
@@ -280,8 +299,10 @@ public class NSChunker {
 				}
 				aPosNew = aC.idxPos;
 			}
-			System.out.println("ChunkP: '"+aChunk+"' => '"+aPosNew+"'\n"
+			if(_DEBUG || NSChunker._DEBUG_ALL) {
+				System.out.println("ChunkP: '"+aChunk+"' => '"+aPosNew+"'\n"
 					+"=>"+aC.chunk);
+			}
 			return aPosStr.substring(0, aM.start())
 					+ aPosNew
 					+ aPosStr.substring(aM.end());
@@ -314,7 +335,9 @@ public class NSChunker {
 //		System.out.println("LanguageTool: "+aLTC);
 		
 		TaggedSent aFusedTS = aligner.fusPos(aSpaCyTS, aPolyglotTS,aLTTS);
-		System.out.println("FUSED POS: "+aFusedTS.idxPos);
+		if(_DEBUG || NSChunker._DEBUG_ALL) {
+			System.out.println("FUSED POS: "+aFusedTS.idxPos);
+		}
 		
 		aFusedTS.chunks = buildChunks(aFusedTS.words,applyRules(ruleLayers,aFusedTS.words,aFusedTS.idxPos));
 
@@ -335,31 +358,32 @@ public class NSChunker {
 			}
 		}
 
-		System.out.println("__________\n"
-				+ "Disambiguations:");
-		for(int w = 0;w < aFusedTS.words.size();w++) {
-			NSChunkerWord aW = aFusedTS.words.elementAt(w);
-			System.out.println(aW.word+"\t"+aW.posOrig+"\t=>\t"+aW.pos);
-		}
-
-		System.out.println("__________\n"
-				+ "Chunks:");
-		for(NSChunkerChunk aC : aFusedTS.chunks) {
-			System.out.println(aC.chunk+"\t"+aC.pos+" F="+aC.hasFem+" P="+aC.hasPlur+" posExt="+aC.posExt);
-		}
-		
-		System.out.println("__________\n"
-				+ "Extracts:");
-		for(NSChunkerChunk aC : aFusedTS.extracts) {
-			System.out.println(aC.chunk+"\t"+aC.pos+" F="+aC.hasFem+" P="+aC.hasPlur+" posExt="+aC.posExt);
-		}
-
 		return aFusedTS;
 	}
 
 	public static void main(String[] args) {
 		try {
-			new NSChunker("fr").process(TestData.text);
+			TaggedSent aTS = new NSChunker("fr").process(TestData.text);
+
+			System.out.println("__________\n"
+					+ "Disambiguations:");
+			for(int w = 0;w < aTS.words.size();w++) {
+				NSChunkerWord aW = aTS.words.elementAt(w);
+				System.out.println(aW.word+"\t"+aW.posOrig+"\t=>\t"+aW.pos);
+			}
+
+			System.out.println("__________\n"
+					+ "Chunks:");
+			for(NSChunkerChunk aC : aTS.chunks) {
+				System.out.println(aC.chunk+"\t"+aC.pos+" F="+aC.hasFem+" P="+aC.hasPlur+" posExt="+aC.posExt);
+			}
+
+			System.out.println("__________\n"
+					+ "Extracts:");
+			for(NSChunkerChunk aC : aTS.extracts) {
+				System.out.println(aC.chunk+"\t"+aC.pos+" F="+aC.hasFem+" P="+aC.hasPlur+" posExt="+aC.posExt);
+			}
+		
 		}
 		catch(Throwable t) {
 			t.printStackTrace(System.err);

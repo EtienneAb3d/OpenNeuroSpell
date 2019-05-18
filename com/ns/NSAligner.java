@@ -3,6 +3,8 @@ package com.ns;
 import java.util.Vector;
 
 public class NSAligner {
+	static final boolean _DEBUG = false;
+
 	class Pair{
 		NSChunkerWord w1 = null;
 		NSChunkerWord w2 = null;
@@ -25,7 +27,8 @@ public class NSAligner {
 				}
 			}
 
-			System.out.println("AL:"
+			if(_DEBUG || NSChunker._DEBUG_ALL) {
+				System.out.println("AL:"
 					+ (aP12.w1!=null ? aP12.w1.word+"\t("+aP12.w1.pos+")":"????")
 					+ "\t/\t"
 					+ (aP12.w2!=null ? aP12.w2.word+"\t("+aP12.w2.pos+")":"????")
@@ -34,6 +37,7 @@ public class NSAligner {
 					+ "\t/\t"
 					+ (aP13 != null && aP13.w2 != null ? aP13.w2.word + "("+aP13.w2.pos+") "+ aP13.w2.lemma + " " + aP13.w2.tag:"????")
 					);
+			}
 
 			if(aP12.w1 == null) {
 				//Ignore if the reference isn't there
@@ -102,7 +106,9 @@ public class NSAligner {
 		for(int w = 0;w < aFused.words.size();w++) {
 			NSChunkerWord aW = aFused.words.elementAt(w);
 			aPosSB.append(" "+w+","+w+aW.pos+" ");
-			System.out.println("FUSED: "+aW.word+"\t("+aW.pos+")\t"+aW.lemma+"\t"+aW.tag);
+			if(_DEBUG || NSChunker._DEBUG_ALL) {
+				System.out.println("FUSED: "+aW.word+"\t("+aW.pos+")\t"+aW.lemma+"\t"+aW.tag);
+			}
 		}
 		aFused.idxPos = aPosSB.toString();
 		

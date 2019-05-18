@@ -15,6 +15,8 @@ import org.languagetool.MultiThreadedJLanguageTool;
 import com.ns.NSChunker.NSChunkerRule;
 
 public class ClientLT {
+	static final boolean _DEBUG = false;
+
 	//Need to manage a pool, because LT is not multi-threads
 	static HashMap<String,Vector<JLanguageTool>> langToolPools = new HashMap<String,Vector<JLanguageTool>>();
 
@@ -52,7 +54,9 @@ public class ClientLT {
 	}
 	
 	public Thread getTagBatch(final TaggedSent aTS,final String aLng,Vector<Vector<NSChunkerRule>> aLtLayers) throws Exception {
-		System.out.println("##########TAG polyglot");
+		if(_DEBUG || NSChunker._DEBUG_ALL) {
+			System.out.println("##########TAG polyglot");
+		}
 
 		Thread aTh = new Thread(new Runnable(){
 			@Override
@@ -72,7 +76,9 @@ public class ClientLT {
 									//Beg/Start/Spc ?
 									continue;
 								}
-								System.out.println("LTW: "+aATR.toString());
+								if(_DEBUG || NSChunker._DEBUG_ALL) {
+									System.out.println("LTW: "+aATR.toString());
+								}
 								StringBuffer aPOSSB = new StringBuffer();
 								StringBuffer aTagSB = new StringBuffer();
 								StringBuffer aLemmaSB = new StringBuffer();

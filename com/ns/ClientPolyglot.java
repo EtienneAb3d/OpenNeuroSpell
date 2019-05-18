@@ -7,10 +7,14 @@ import org.json.simple.parser.JSONParser;
 import com.mindprod.http.Post;
 
 public class ClientPolyglot {
+	static final boolean _DEBUG = false;
+
 	static int port = 8082;
 
 	public static Thread getTagBatch(final TaggedSent aTS,final String aLng) throws Exception {
-		System.out.println("##########TAG polyglot");
+		if(_DEBUG || NSChunker._DEBUG_ALL) {
+			System.out.println("##########TAG polyglot");
+		}
 		Thread aTh = new Thread(new Runnable() {
 			@Override
 			public void run() {
@@ -22,14 +26,18 @@ public class ClientPolyglot {
 							);
 
 					String aRep = aPost.send("localhost",8082,"/tag", "utf-8");
-					System.out.println("REP="+aRep);
+					if(_DEBUG || NSChunker._DEBUG_ALL) {
+						System.out.println("REP="+aRep);
+					}
 					JSONParser parser = new JSONParser();
 					JSONArray aJSO = (JSONArray)parser.parse(aRep);
 
 					StringBuffer aPosSB = new StringBuffer();
 					int aCountW = 0;
 					for(Object aO : aJSO) {
-						System.out.println("PGW: "+aO);
+						if(_DEBUG || NSChunker._DEBUG_ALL) {
+							System.out.println("PGW: "+aO);
+						}
 						JSONArray aA = (JSONArray)aO;
 						NSChunkerWord aW = new NSChunkerWord();
 						aW.word = (String)aA.get(0);
@@ -60,11 +68,15 @@ public class ClientPolyglot {
 				    "lng",aLng
 				    );
 			String aRep = aPost.send("localhost",ClientPolyglot.port,"/ent", "utf-8");
-			System.out.println("POLYGLOTREP="+aRep);
+			if(_DEBUG || NSChunker._DEBUG_ALL) {
+				System.out.println("POLYGLOTREP="+aRep);
+			}
 			JSONParser parser = new JSONParser();
 			JSONArray aJSA = (JSONArray)parser.parse(aRep);
 			for(Object aT : aJSA){
-				System.out.println(aT);
+				if(_DEBUG || NSChunker._DEBUG_ALL) {
+					System.out.println(aT);
+				}
 				JSONObject aO = (JSONObject)aT;
 //				for(Object aK : aO.keySet()){
 //					System.out.println(aK+":"+aO.get(aK));
@@ -78,7 +90,9 @@ public class ClientPolyglot {
 				String aEnt = aEntSB.toString().trim();
 				if(aEnt.toLowerCase().equals(aEnt)){
 					//Ignore lowercased ents
-					System.out.println("POLYGLOTENT: "+aEnt+"/"+aLabel+" IGNORED LC");
+					if(_DEBUG || NSChunker._DEBUG_ALL) {
+						System.out.println("POLYGLOTENT: "+aEnt+"/"+aLabel+" IGNORED LC");
+					}
 					continue;
 				}
 //				if(aLabel.matches("(DATE|TIME|ORDINAL|CARDINAL|PERCENT|MONEY|QUANTITY|LANGUAGE)")){
@@ -86,10 +100,14 @@ public class ClientPolyglot {
 //					System.out.println("SPACYENT: "+aEnt+"/"+aLabel+" IGNORED "+aLabel);
 //					continue;
 //				}
-				System.out.println("POLYGLOTENT: "+aEnt+"/"+aLabel);
+				if(_DEBUG || NSChunker._DEBUG_ALL) {
+					System.out.println("POLYGLOTENT: "+aEnt+"/"+aLabel);
+				}
 				aSB.append("\t["+aEnt+"]"+aLabel);
 			}
-			System.out.println("POLYGLOTSTRING="+aSB.toString());
+			if(_DEBUG || NSChunker._DEBUG_ALL) {
+				System.out.println("POLYGLOTSTRING="+aSB.toString());
+			}
 		}
 		catch(Throwable t) {
 			//Ignore all for now
