@@ -41,11 +41,13 @@ public class NSChunker {
 	Vector<Vector<NSChunkerRule>> ruleExtracts = new Vector<Vector<NSChunkerRule>>();
 
 	NSAligner aligner = null;
+	boolean usePolyglot = true;
 
-	public NSChunker(String aLng) throws Exception {
+	public NSChunker(String aLng,boolean aUsePolyglot) throws Exception {
 		lng = aLng.toLowerCase();
 		loadRules();
 		aligner = new NSAligner();
+		usePolyglot = aUsePolyglot;
 	}
 	
 	void loadRules() throws Exception {
@@ -323,12 +325,17 @@ public class NSChunker {
 		Thread aSpaCyTh = ClientSpacy.getTagBatch(aSpaCyTS,lng);
 		
 		TaggedSent aPolyglotTS = new TaggedSent();
-		aPolyglotTS.text = aTxt;
-		Thread aPolyglotTh = ClientPolyglot.getTagBatch(aPolyglotTS,lng);
+		Thread aPolyglotTh = null;
+		if(usePolyglot) {
+			aPolyglotTS.text = aTxt;
+			aPolyglotTh = ClientPolyglot.getTagBatch(aPolyglotTS,lng);
+		}
 		
 		aThLTC.join();
 		aSpaCyTh.join();
-		aPolyglotTh.join();
+		if(usePolyglot) {
+			aPolyglotTh.join();
+		}
 		
 		aLT.releaseLT();
 		
@@ -363,7 +370,7 @@ public class NSChunker {
 
 	public static void main(String[] args) {
 		try {
-			TaggedSent aTS = new NSChunker("fr").process(TestData.text);
+			TaggedSent aTS = new NSChunker("fr",true).process(TestData.text);
 
 			System.out.println("__________\n"
 					+ "Disambiguations:");

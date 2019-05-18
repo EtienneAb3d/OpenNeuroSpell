@@ -14,16 +14,16 @@ public class NSAligner {
 		Vector<Pair> aP13s = align(aTS1, aTS3);
 		
 		TaggedSent aFused = new TaggedSent();
-		int aP13idx = aP13s.size()-1;
-		for(int p = aP12s.size()-1;p >= 0;p--) {
+		int aP13idx = 0;
+		for(int p = 0;p < aP12s.size();p++) {
 			Pair aP12 = aP12s.elementAt(p);
 
 			//Must found a P13 match
 			Pair aP13 = null;
-			if(aP12.w1 != null && aP13idx >= 0) {
+			if(aP12.w1 != null && aP13idx < aP13s.size()) {
 				while(aP13 == null || aP13.w1 == null || !aP12.w1.word.equals(aP13.w1.word)){
 					aP13 = aP13s.elementAt(aP13idx);
-					aP13idx--;
+					aP13idx++;
 				}
 			}
 
@@ -165,7 +165,14 @@ public class NSAligner {
 			}
 			aPs.add(aP);
 		}
-		return aPs;
+		
+		//Reverse order
+		Vector<Pair> aPOs = new Vector<Pair>();
+		for(int p = aPs.size()-1;p >= 0;p--) {
+			aPOs.add(aPs.elementAt(p));
+		}
+		
+		return aPOs;
 	}
 	
 	double cost(NSChunkerWord aW1,NSChunkerWord aW2) {
