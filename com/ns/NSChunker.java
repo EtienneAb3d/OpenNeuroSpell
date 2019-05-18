@@ -243,7 +243,7 @@ public class NSChunker {
 		Matcher aM = aR.patternPOS.matcher(aPosStr);
 		while(aM.find()) {
 			String aChunk = aPosStr.substring(aM.start(),aM.end());
-			System.out.println("FOUND CHUNK: ["+aChunk+"] WITH: ["+aR.patternPOSDef+"] R: "+aR.ruleDef+" ON: ["+aPosStr+"]");
+//			System.out.println("FOUND CHUNK: ["+aChunk+"] WITH: ["+aR.patternPOSDef+"] R: "+aR.ruleDef+" ON: ["+aPosStr+"]");
 			String[] aCPs = aChunk.trim().split(" ");
 			int aS = Integer.parseInt(aCPs[0].replaceAll(",.*", ""));
 			int aE = Integer.parseInt(aCPs[aCPs.length-1].replaceAll("(.*,|[^0-9,]+)", ""));
