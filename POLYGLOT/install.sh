@@ -9,6 +9,6 @@ pushd ~/
 popd
 
 sudo apt-get install python-numpy libicu-dev
-pip3 install pycld2 morfessor polyglot
+pip3 install pycld2 morfessor polyglot pyicu
 polyglot download embeddings2.fr pos2.fr ner2.fr
 pip3 install -r requirements.txt
