@@ -34,4 +34,4 @@ if __name__ == "__main__":
 
     app = hug.API(__name__)
     app.http.add_middleware(CORSMiddleware(app))
-    waitress.serve(__hug_wsgi__, port=8082)
+    waitress.serve(__hug_wsgi__, port=8081)

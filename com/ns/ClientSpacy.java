@@ -13,7 +13,8 @@ public class ClientSpacy {
 	static final boolean _DEBUG = false;
 
 	static final HashMap<String,String> model4lng = new HashMap<String,String>();
-	static int port = 8081;
+	static int port = 8091;
+	static int instances = 1;
 
 	static String getModel(String aLng) throws Exception {
 		String aModel = model4lng.get(aLng);
@@ -58,7 +59,7 @@ public class ClientSpacy {
 						    "model",aModel
 						    );
 					
-					String aRep = aPost.send("localhost",8081,"/tag", "utf-8");
+					String aRep = aPost.send("localhost",port+(int)Math.floor(Math.random()*instances),"/tag", "utf-8");
 					if(_DEBUG || NSChunker._DEBUG_ALL) {
 						System.out.println("REP="+aRep);
 					}

@@ -9,7 +9,7 @@ import com.mindprod.http.Post;
 public class ClientPolyglot {
 	static final boolean _DEBUG = false;
 
-	static int port = 8082;
+	static int port = 8081;
 
 	public static Thread getTagBatch(final TaggedSent aTS,final String aLng) throws Exception {
 		if(_DEBUG || NSChunker._DEBUG_ALL) {
@@ -25,7 +25,7 @@ public class ClientPolyglot {
 							"lng",aLng
 							);
 
-					String aRep = aPost.send("localhost",8082,"/tag", "utf-8");
+					String aRep = aPost.send("localhost",port,"/tag", "utf-8");
 					if(_DEBUG || NSChunker._DEBUG_ALL) {
 						System.out.println("REP="+aRep);
 					}

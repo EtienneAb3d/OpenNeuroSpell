@@ -11,6 +11,7 @@ virtualenv --system-site-packages -p python3.6 ./venvNS
 popd
 
 pip3 install -r requirements.txt
+pip install -U spacy[cuda92]
 #download/refresh models
 python3.6 -m spacy download en_core_web_sm
 python3.6 -m spacy download fr_core_news_sm

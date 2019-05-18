@@ -5,4 +5,4 @@ pushd ~/
 . ./venvNS/bin/activate
 popd
 
-python3.6 app.py
+python3.6 appSpaCy.py
