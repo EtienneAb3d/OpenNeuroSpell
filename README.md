@@ -3,7 +3,7 @@ OpenNeuroSpell contains parts of NeuroSpell (http://neurospell.com/en.php) relea
 
 ## A- NSChunker
 
-NSChunker is combining spaCy, polyglot, and LanguageTool analysers for POS re-disambiguation, high quality chunking, and entities extraction.
+NSChunker is combining spaCy, polyglot, and LanguageTool analysers for POS re-disambiguation, high quality chunking, and nominal entities extraction.
 
 NSChunker is a rule-based iterative label rewriter / aggregator. Each rule takes into account the POS-tagging, the extended TAG, and the text of words. Rules are organised in independant layers.
 
@@ -127,3 +127,10 @@ accords	~NOUN F=false P=true posExt=NOUN
 Paris	~PROPN F=false P=false posExt=PROPN
 +1,5 ° C de température	~NOUN F=true P=false posExt=NUM NOUN NOUN ADP NOUN
 ```
+### 4- High speed POS-tagging / chunking / nominal entities extraction
+
+- start several copies of spaCy on a GPU card using <code>startN.sh</code>
+- create a chunker without polyglot new <code>NSChunker("fr",false)</code>
+
+Typical processing rate : 700K sentences / hour on a 2080Ti card
+
