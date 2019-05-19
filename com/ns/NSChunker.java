@@ -37,6 +37,7 @@ public class NSChunker {
 	String lng = null;
 
 	Vector<Vector<NSChunkerRule>> ltLayers = new Vector<Vector<NSChunkerRule>>();
+	Vector<Vector<NSChunkerRule>> spaCyLayers = new Vector<Vector<NSChunkerRule>>();
 	Vector<Vector<NSChunkerRule>> ruleLayers = new Vector<Vector<NSChunkerRule>>();
 	Vector<Vector<NSChunkerRule>> ruleExtracts = new Vector<Vector<NSChunkerRule>>();
 
@@ -67,6 +68,14 @@ public class NSChunker {
 				}
 				aCurrentRules = new Vector<NSChunkerRule>();
 				ltLayers.add(aCurrentRules);
+				continue;
+			}
+			if(aLine.startsWith("SPACY")) {
+				if(_DEBUG || NSChunker._DEBUG_ALL) {
+					System.out.println("SPACY");
+				}
+				aCurrentRules = new Vector<NSChunkerRule>();
+				spaCyLayers.add(aCurrentRules);
 				continue;
 			}
 			if(aLine.startsWith("LAYER")) {
@@ -322,7 +331,7 @@ public class NSChunker {
 		
 		TaggedSent aSpaCyTS = new TaggedSent();
 		aSpaCyTS.text = aTxt;
-		Thread aSpaCyTh = ClientSpacy.getTagBatch(aSpaCyTS,lng);
+		Thread aSpaCyTh = ClientSpacy.getTagBatch(aSpaCyTS,lng, spaCyLayers);
 		
 		TaggedSent aPolyglotTS = new TaggedSent();
 		Thread aPolyglotTh = null;
@@ -370,7 +379,7 @@ public class NSChunker {
 
 	public static void main(String[] args) {
 		try {
-			TaggedSent aTS = new NSChunker("fr",true).process(TestData.text);
+			TaggedSent aTS = new NSChunker(TestData.lng,true).process(TestData.text);
 
 			System.out.println("__________\n"
 					+ "Disambiguations:");

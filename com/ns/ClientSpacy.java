@@ -1,6 +1,7 @@
 package com.ns;
 
 import java.util.HashMap;
+import java.util.Vector;
 
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
@@ -8,6 +9,7 @@ import org.json.simple.parser.JSONParser;
 
 import com.mindprod.http.Get;
 import com.mindprod.http.Post;
+import com.ns.NSChunker.NSChunkerRule;
 
 public class ClientSpacy {
 	static final boolean _DEBUG = false;
@@ -43,7 +45,7 @@ public class ClientSpacy {
 		return aModel;
 	}
 
-	public static Thread getTagBatch(final TaggedSent aTS,final String aLng) throws Exception {
+	public static Thread getTagBatch(final TaggedSent aTS,final String aLng,Vector<Vector<NSChunkerRule>> aLtLayers) throws Exception {
 		if(_DEBUG || NSChunker._DEBUG_ALL) {
 			System.out.println("##########TAG spaCy");
 		}
@@ -61,7 +63,7 @@ public class ClientSpacy {
 					
 					String aRep = aPost.send("localhost",port+(int)Math.floor(Math.random()*instances),"/tag", "utf-8");
 					if(_DEBUG || NSChunker._DEBUG_ALL) {
-						System.out.println("REP="+aRep);
+						System.out.println("SPACY="+aRep);
 					}
 					JSONParser parser = new JSONParser();
 					JSONArray aJSO = (JSONArray)parser.parse(aRep);
@@ -77,8 +79,24 @@ public class ClientSpacy {
 						aW.word = (String)aA.get(0);
 						aW.lemma = (String)aA.get(1);
 						aW.pos = (String)aA.get(2);
-						aW.tag = (String)aA.get(3);
+						aW.tag = aW.lemma+"\t"+(String)aA.get(3);
 						aTS.words.add(aW);
+						for(Vector<NSChunkerRule> aLayer : aLtLayers) {
+							for(NSChunkerRule aR : aLayer) {
+								if(aR.patternPOS.matcher(aW.pos).matches()) {
+									if(aR.patternText != null && !aR.patternText.matcher(aW.word).matches()) {
+										//Ignore
+										continue;
+									}
+									if(aR.patternTag != null && !aR.patternTag.matcher(aW.tag).matches()) {
+										//Ignore
+										continue;
+									}
+									aW.pos = aR.pos;
+									break;
+								}
+							}
+						}
 						aPosSB.append(" "+aCountW+","+aCountW+aW.pos+" ");
 						aCountW++;
 					}

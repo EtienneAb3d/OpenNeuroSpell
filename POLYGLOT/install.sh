@@ -11,4 +11,5 @@ popd
 sudo apt-get install python-numpy libicu-dev
 pip3 install pycld2 morfessor polyglot pyicu
 polyglot download embeddings2.fr pos2.fr ner2.fr
+polyglot download embeddings2.en pos2.en ner2.en
 pip3 install -r requirements.txt

@@ -29,13 +29,13 @@ public class NSAligner {
 
 			if(_DEBUG || NSChunker._DEBUG_ALL) {
 				System.out.println("AL:"
-					+ (aP12.w1!=null ? aP12.w1.word+"\t("+aP12.w1.pos+")":"????")
+					+ (aP12.w1!=null ? aP12.w1.word+"\tPOS("+aP12.w1.pos+")":"????")
 					+ "\t/\t"
-					+ (aP12.w2!=null ? aP12.w2.word+"\t("+aP12.w2.pos+")":"????")
+					+ (aP12.w2!=null ? aP12.w2.word+"\tPOS("+aP12.w2.pos+")":"????")
 					+ "\t|\t"
-					+ (aP12.w1!=null ? aP12.w1.lemma + " " + aP12.w1.tag:"????")
+					+ (aP12.w1!=null ? "LEM("+aP12.w1.lemma + ") TAG(" + aP12.w1.tag+")":"????")
 					+ "\t/\t"
-					+ (aP13 != null && aP13.w2 != null ? aP13.w2.word + "("+aP13.w2.pos+") "+ aP13.w2.lemma + " " + aP13.w2.tag:"????")
+					+ (aP13 != null && aP13.w2 != null ? aP13.w2.word + " POS("+aP13.w2.pos+") LEM("+ aP13.w2.lemma + ") TAG(" + aP13.w2.tag+")":"????")
 					);
 			}
 
@@ -50,7 +50,7 @@ public class NSAligner {
 			
 			if(aP13.w2 != null) {
 				//Enrich tag
-				aW.tag += " LR: " + aP13.w2.tag;
+				aW.tag += " LT: " + aP13.w2.tag;
 			}
 					
 			if(aP12.w2 == null

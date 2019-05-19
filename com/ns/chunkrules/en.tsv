@@ -12,29 +12,31 @@
 //==================================================
 LANGUAGETOOL	//=====	special layer for LanguageTool rewriting
 
-DET	D
-NOUN	N
-PROPN	Z
-AUX	V	(etre|avoir)\t.*
-ADJ	J
-ADP	P
-ADV	A
-CONJ	C
-PRON	R
-NUM	Y
-VBG	V	.*\tV ppr .*
-VBN	V	.*\tV ppa .*
-VB	V	.*\tV inf .*
-VERB	V
-PUNCT	M
+DET	(DT|WDT)
+NOUN	NN(:UN?|S)?
+PROPN	(NNPS?|FW)
+AUX	(VB[DNP]?|MD)	(be|have|will)\t.*
+ADJ	JJ[RS]?
+ADP	(IN|PDT)
+ADV	(RB[RS]?|WRB)
+CONJ	CC
+PRON	(PRP[$]?|WP[$]?)
+NUM	CD
+VBG	VBG
+VBN	VB[DN]
+VB	VB
+VERB	(VB[PZ]|MD)
+PUNCT	(``|''|[,.:])
+PART	(IN|TO|RP)
 
 //==================================================
 SPACY	//=====	special layer for spaCy rewriting
 
-+VBG	VERB	.*Tense=Pres.*VerbForm=Part.*	//spaCy FR like EN tag
-+VBN	VERB	.*Tense=Past.*VerbForm=Part.*	//spaCy FR like EN tag
-+VB	VERB	.*VerbForm=Inf.*	//spaCy FR like EN tag
-+VBX	AUX	.*VerbForm=Inf.*	//"avoir" "être"
++VBG	VERB	.*\tVBG
++VBN	VERB	.*\tVBN
++VB	VERB	.*\tVB
++VBX	AUX	.*\t(BES|HSV)	//"be" "have"
+
 
 //==================================================
 LAYER	//=====	spaCy/polyglot simple balancing
@@ -96,15 +98,15 @@ NUM	&PUNCT;&NUM;&PUNCT;	.*	[(].*[)]	//"(3)"
 NUM	&NUM;((&SPACE;|&ADP;|&HYP;|&SLSH;|&PUNCT;|&CONJ;)&NUM;)+	//"8 à 10"
 
 PRON	&PRON;+	//"nous nous"
-PRON	&ADP;&PRON;	.*	.* (qui|quoi)	//"de qui" "avec quoi"
 
 NOUN	&NOUN;&ADV;+(&ADJ;|&VBN;)	//"caractère bien trempé"
 
-VERB	&ADV;&PRON;?(&AUX;|&VERB;)&ADV;	.*	n[e'] .* pas	//"ne s'agit pas"
-VERB	&ADV;(&AUX;|&VERB;)&PRON;?&VB;	.*	n[e'] .*	//"ne peut se satisfaire"
+VB/PART	&_PART_;(&VERB;|&VB;)	.*	[tT][oO] .*	//"to consider"
+
 VERB	(&QBEG;|&QUOT;)&VERB;(&QEND;|&QUOT;)	//"« peut »"
 VERB	(&ADV;|&VBN;|&VB;|&VERB;|&AUX;)*(&VERB;|&AUX;)+(&ADV;*(&VB;|&VBN;|&VBX;|&VBXN;))*	//"a été rapidement mangé" "peuvent être" "ne seraient pas"
 VERB	&VERB;&CONJ;&VERB;	//"commandé et fabriqué"
+VERB	(&VERB;|&AUX;)(&ADP;|&ADJ;|&VB;|&VBX;)	//"voted down" "was due" "would bring"
 
 ADJ	(&QBEG;|&QUOT;)&ADJ;(&QEND;|&QUOT;)	//"« saine »"
 ADJ/ADJ,VBN	&_ADJ_;((&CONJ;|&SLSH;)*(&_ADJ_;|&_VBN_;))+	//"rouge et vert" "jolie et maquillée"
@@ -121,11 +123,11 @@ ADV	&ADV;(&CONJ;|&SLSH;)*(&ADV;|&VBN;)	//"plus vite" "vite et bien" "vite fait b
 ADV	&ADP;&ADV;	//"par ailleurs"
 ADV	&ADV;+&ADJ;	//"naturellement présente" "également paritaires"
 
-VBG	&ADP;&PRON;?(&VBG;|&VERB;|&AUX;)	.*	[eE][nN] .*	//"en berçant" "en se berçant"
+VBG	&ADP;&PRON;?(&VBG;|&VERB;|&AUX;)	.*	[bB][yY] .*	//"en berçant" "en se berçant"
 VBG	&VBG;(&ADV;|&ADJ;)+	//"en marchant très vite"
 
+VBN	&VBN;&ADP;	//"voted down"
 VBN	(&QBEG;|&QUOT;)&VBN;(&QEND;|&QUOT;)	//"« marqué »"
-VBN	&VBN;&CONJ;&VBN;	//"sélectionnées ou  primées"
 
 VBXN	&VBX;(&ADV;|&ADJ;|&AUX;)*&VBN;	//"avoir pris" "avoir été interrogés"
 
@@ -136,9 +138,9 @@ PRON	&QUOT;&PRON;&QUOT;
 PROPN	&QUOT;&PROPN;&QUOT;
 PROPN	&PROPN;+
 
-NOUN	&VBN;&ADP;&NOUN;	.*	.* (en|de) .*	//"mise en scène" "prise de bec"
+NOUN	&VBN;&ADP;&NOUN;	.*	.* (of) .*	//"mise en scène" "prise de bec"
 
-PROPN/+.*>PROPN	&PROPN;&ADP;&DET;?&PROPN;	.*	.* (de|en) .*	//"Théâtre de la Michodière"
+PROPN/+.*>PROPN	&PROPN;&ADP;&DET;?&PROPN;	.*	.* (of) .*	//"House of Commons"
 PROPN/+.*>PROPN	&PROPN;((&DET;|&HYP;)*(&PROPN;|&NOUN;))+	//
 PROPN/+VB[NG]>PROPN	&PROPN;(&VB;|&VBN;|&VBG;)	//Typical enterprise name ?
 
@@ -156,7 +158,7 @@ PROPN/NOUN,PROPN	(&PROPN;(&HYP;|&SLSH;|&CONJ;)(&_NOUN_;|&_PROPN_;)|(&_NOUN_;|&_P
 NOUN	(&QBEG;|&QUOT;)&NOUN;(&QEND;|&QUOT;)	//"« IBG »"
 NOUN	&PRON;&VB;	//"au dîner"
 NOUN	&NOUN;&HYP;&ADV;	//"prix-là"
-NOUN	((&NOUN;|&PROPN;|&UNK;)(&ADP;*(&ADJ;|&NUM;|&VBN;|&VB;|&ADJ_NOUN;|&DET_ADJ;)+)*)+	//"papillon vert saturé" "robe en bleu" "Napoléon I" "pièce à peindre"
+NOUN	((&ADP;*(&ADJ;|&NUM;|&VBN;|&VB;|&ADJ_NOUN;|&DET_ADJ;)+)*(&NOUN;|&PROPN;|&UNK;))+	//"papillon vert saturé" "robe en bleu" "Napoléon I" "pièce à peindre"
 NOUN	(&DET;|&NUM;|&NOUN;)(&NUM;|&ADJ;|&ADV;|&ADP;|&NOUN;)*&NOUN;	//"la grande peinture" "le 21 mars"
 NOUN	(&ADJ;|&NUM;)+&NOUN;	//"premier parti" "deux verres"
 
@@ -173,7 +175,7 @@ ADJ	&VBG;&ADP;&DET;?&NOUN;	//"contenant du sable" "produisant de la valeur"
 ADJ	&ADJ;(&ADP;|&HYP;|&SLSH;|&CONJ;)&ADJ;	//"public ou privé"
 
 NOUN	&NOUN;(&HYP;|&SLSH;|&CONJ;|&DET;|&ADP;)*&NOUN;
-NOUN	&NUM;*(&NOUN;(&ADP;*(&ADJ;|&ADV;|&NUM;|&VBN;|&VB;|&ADJ_NOUN;)+)*)+
+NOUN	&NUM;*((&ADP;*(&ADJ;|&ADV;|&NUM;|&VBN;|&VB;|&ADJ_NOUN;)+)*&NOUN;)+
 
 PROPN	&PROPN;&NUM;
 

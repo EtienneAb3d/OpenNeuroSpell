@@ -27,7 +27,7 @@ public class ClientPolyglot {
 
 					String aRep = aPost.send("localhost",port,"/tag", "utf-8");
 					if(_DEBUG || NSChunker._DEBUG_ALL) {
-						System.out.println("REP="+aRep);
+						System.out.println("POLYGLOT="+aRep);
 					}
 					JSONParser parser = new JSONParser();
 					JSONArray aJSO = (JSONArray)parser.parse(aRep);

@@ -88,12 +88,14 @@ public class ClientLT {
 										//Ignore this POS
 										continue;
 									}
+									String aLemma = aAT.getLemma();
 									if(aPOSTag != null && aPOSTag.length() > 0) {
-										aTagSB.append((aTagSB.length()>0?",":"")+aPOSTag);
 										String aPOS = aPOSTag;
 										if(aPOSTag.indexOf(" ") > 0) {
 											aPOS = aPOSTag.substring(0, aPOSTag.indexOf(" "));
 										}
+										aPOSTag = aLemma+"\t"+aPOSTag;
+										aTagSB.append((aTagSB.length()>0?",":"")+aPOSTag);
 										for(Vector<NSChunkerRule> aLayer : aLtLayers) {
 											for(NSChunkerRule aR : aLayer) {
 												if(aR.patternPOS.matcher(aPOS).matches()) {
@@ -110,12 +112,14 @@ public class ClientLT {
 												}
 											}
 										}
-										aPOSSB.append(" "+aPOS+" ");
+										if(aPOSSB.indexOf(" "+aPOS+" ") < 0) {
+											aPOSSB.append(" "+aPOS+" ");
+										}
 									}
-									aLemmaSB.append((aLemmaSB.length() > 0 ? ",":"")+aAT.getLemma());
+									aLemmaSB.append((aLemmaSB.length() > 0 ? ",":"")+aLemma);
 								}
 								aW.lemma = aLemmaSB.toString().trim();
-								aW.pos = aPOSSB.toString().replaceAll(" +", " ");
+								aW.pos = aPOSSB.toString().replaceAll(" +", " ").trim();
 								aW.tag = aTagSB.toString().trim();
 								aTS.words.add(aW);
 								aPosSB.append(" "+aCountW+","+aCountW+aW.pos+" ");
