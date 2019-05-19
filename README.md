@@ -131,7 +131,7 @@ Paris	~PROPN F=false P=false posExt=PROPN
 
 - start several copies of spaCy on a GPU card using <code>startN.sh</code>
 - define the number of spaCy servers launched with <code>ClientSpacy.instances = 10;</code>
-- create a chunker without polyglot new <code>NSChunker("fr",false)</code>
+- create a chunker without polyglot <code>new NSChunker("fr",false)</code>
 
 Typical processing rate : 700K sentences / hour on a 2080Ti card
 
