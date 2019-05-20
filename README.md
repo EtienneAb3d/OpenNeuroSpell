@@ -133,5 +133,4 @@ Paris	~PROPN F=false P=false posExt=PROPN
 - define the number of spaCy servers launched with <code>ClientSpacy.instances = 32;</code>
 - create a chunker without polyglot <code>new NSChunker("fr",false)</code>
 
-Typical processing rate : 700K sentences / hour on a 2080Ti card
 
