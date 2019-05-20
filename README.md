@@ -129,8 +129,8 @@ Paris	~PROPN F=false P=false posExt=PROPN
 ```
 ### 4- High speed POS-tagging / chunking / nominal entities extraction
 
-- start several copies of spaCy on a GPU card using <code>startN.sh</code>
-- define the number of spaCy servers launched with <code>ClientSpacy.instances = 10;</code>
+- start several copies of spaCy using <code>startN.sh</code> (adapt it according to your number of processors)
+- define the number of spaCy servers launched with <code>ClientSpacy.instances = 32;</code>
 - create a chunker without polyglot <code>new NSChunker("fr",false)</code>
 
 Typical processing rate : 700K sentences / hour on a 2080Ti card
