@@ -15,8 +15,13 @@ public class ClientSpacy {
 	static final boolean _DEBUG = false;
 
 	static final HashMap<String,String> model4lng = new HashMap<String,String>();
+	static {
+		model4lng.put("fr", "fr_core_news_sm");
+		model4lng.put("en", "en_core_web_sm");
+	}
 	static int port = 8091;
 	static int instances = 1;
+	static int currentInstance = 0;
 
 	static String getModel(String aLng) throws Exception {
 		String aModel = model4lng.get(aLng);
@@ -42,6 +47,9 @@ public class ClientSpacy {
 				aModel = aM;
 			}
 		}
+		if(aModel == null) {
+			throw new Exception("can't find a '"+aLng+"' model for spaCy");
+		}
 		return aModel;
 	}
 
@@ -57,11 +65,12 @@ public class ClientSpacy {
 
 					Post aPost = new Post();
 					String aTxt = aTS.text.replaceAll("["+NSUtils.allapos+"]", "'");
-					aPost.setPostParms("text",aTxt,
+					aPost.setPostParms(
+							"text",aTxt,
 						    "model",aModel
 						    );
 					
-					String aRep = aPost.send("localhost",port+(int)Math.floor(Math.random()*instances),"/tag", "utf-8");
+					String aRep = aPost.send("localhost",port+(int)Math.floor(currentInstance++ % instances),"/tag", "utf-8");
 					if(_DEBUG || NSChunker._DEBUG_ALL) {
 						System.out.println("SPACY="+aRep);
 					}

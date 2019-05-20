@@ -17,43 +17,48 @@ import com.ns.NSChunker.NSChunkerRule;
 public class ClientLT {
 	static final boolean _DEBUG = false;
 
-	//Need to manage a pool, because LT is not multi-threads
 	static HashMap<String,Vector<JLanguageTool>> langToolPools = new HashMap<String,Vector<JLanguageTool>>();
-
-	JLanguageTool langTool = null;
+	
 	String lng = null;
 
-	public ClientLT(String aLng) throws Exception {
-		lng = aLng;
+	public static JLanguageTool getLT(String aLng) throws Exception {
+		Vector<JLanguageTool> aLangToolPool = null;
 		synchronized(langToolPools){
-			Vector<JLanguageTool> langToolPool = langToolPools.get(lng);
-			if(langToolPool == null) {
-				langToolPool = new Vector<JLanguageTool>();
-				langToolPools.put(lng,langToolPool);
+			aLangToolPool = langToolPools.get(aLng);
+			if(aLangToolPool == null) {
+				aLangToolPool = new Vector<JLanguageTool>();
+				langToolPools.put(aLng,aLangToolPool);
 			}
-			if(langToolPool.size() > 0) {
-				langTool = langToolPool.remove(0);
+		}
+		JLanguageTool aLangTool = null;
+		synchronized(aLangToolPool){
+			if(aLangToolPool.size() > 0) {
+				aLangTool = aLangToolPool.remove(0);
 			}
 			else {
-				langTool = new MultiThreadedJLanguageTool(Languages.getLanguageForShortCode(aLng),4);
+				aLangTool = new MultiThreadedJLanguageTool(Languages.getLanguageForShortCode(aLng),4);
 			}
 		}
+		return aLangTool;
 	}
 	
-	public void releaseLT() throws Exception {
+	public static void releaseLT(String aLng,JLanguageTool aLangTool) throws Exception {
+		Vector<JLanguageTool> aLangToolPool = null;
 		synchronized(langToolPools){
-			Vector<JLanguageTool> langToolPool = langToolPools.get(lng);
-			if(langToolPool == null) {
+			aLangToolPool = langToolPools.get(aLng);
+			if(aLangToolPool == null) {
 				//??
-				langToolPool = new Vector<JLanguageTool>();
-				langToolPools.put(lng,langToolPool);
+				aLangToolPool = new Vector<JLanguageTool>();
+				langToolPools.put(aLng,aLangToolPool);
 			}
-			langToolPool.add(langTool);
-			langTool = null;
+		}
+		synchronized(aLangToolPool) {
+			aLangToolPool.add(aLangTool);
+			aLangTool = null;
 		}
 	}
 	
-	public Thread getTagBatch(final TaggedSent aTS,final String aLng,Vector<Vector<NSChunkerRule>> aLtLayers) throws Exception {
+	public static Thread getTagBatch(final TaggedSent aTS,final String aLng,Vector<Vector<NSChunkerRule>> aLtLayers) throws Exception {
 		if(_DEBUG || NSChunker._DEBUG_ALL) {
 			System.out.println("##########TAG polyglot");
 		}
@@ -62,10 +67,14 @@ public class ClientLT {
 			@Override
 			public void run() {
 				try{
+					JLanguageTool aLangTool = ClientLT.getLT(aLng);
 					ArrayList<String> aSents = new ArrayList<String>();
 					String aTxt = aTS.text.replaceAll("["+NSUtils.allapos+"]", "'");
 					aSents.add(aTxt);
-					List<AnalyzedSentence> aASents = langTool.analyzeSentences(aSents);
+					List<AnalyzedSentence> aASents = aLangTool.analyzeSentences(aSents);
+					
+					ClientLT.releaseLT(aLng,aLangTool);
+					
 					int aCountW = 0;
 					StringBuffer aPosSB = new StringBuffer();
 					for(AnalyzedSentence aAS : aASents) {

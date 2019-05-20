@@ -182,14 +182,14 @@ public class NSAligner {
 		if(aW1.word.equalsIgnoreCase(aW2.word)) {
 			return 0.01;
 		}
-		if(aW1.word.indexOf(aW2.word) >= 0
-				|| aW1.word.indexOf(aW2.word) >= 0) {
-			return Math.min(aW1.word.length(),aW2.word.length())/Math.max(aW1.word.length(),aW2.word.length());
+		if(aW1.word.startsWith(aW2.word) || aW1.word.endsWith(aW2.word)
+				|| aW2.word.startsWith(aW1.word) || aW2.word.endsWith(aW1.word)) {//Segmentation problem ?
+			return 1.0 - 2.0*Math.min(aW1.word.length(),aW2.word.length())/(double)(aW1.word.length()+aW2.word.length());
 		}
 		if(aW1.pos.equalsIgnoreCase(aW2.pos)) {
 			return 1.0;
 		}
-		return 1.0+Math.min(aW1.word.length(),aW2.word.length())/Math.max(aW1.word.length(),aW2.word.length());
+		return 2.0 - 2.0*Math.min(aW1.word.length(),aW2.word.length())/(double)(aW1.word.length()+aW2.word.length());
 	}
 	
 	public static void main(String[] args) {

@@ -6,7 +6,7 @@ from hug_middleware_cors import CORSMiddleware
 import spacy
 import sys
 
-spacy.prefer_gpu()
+#spacy.prefer_gpu()
 
 #MODELS = {
 #    "en_core_web_sm": spacy.load("en_core_web_sm"),
@@ -22,9 +22,13 @@ spacy.prefer_gpu()
 #}
 
 MODELS = {
-    "en_core_web_sm": spacy.load("en_core_web_sm")
-    ,"fr_core_news_sm": spacy.load("fr_core_news_sm")
 }
+
+def getModel(model_name):
+    if model_name not in MODELS:
+        nlp = spacy.load(model_name)
+        MODELS[model_name] = nlp
+    return MODELS[model_name]
 
 def get_model_desc(nlp, model_name):
     """Get human-readable model name, language name and version."""
@@ -47,13 +51,26 @@ def dep(
     collapse_phrases: bool = False,
 ):
     """Get dependencies for displaCy visualizer."""
-    nlp = MODELS[model]
+    nlp = getModel(model)
     doc = nlp(text)
     if collapse_phrases:
         for np in list(doc.noun_chunks):
             np.merge(tag=np.root.tag_, lemma=np.root.lemma_, ent_type=np.root.ent_type_)
     options = {"collapse_punct": collapse_punctuation}
     return spacy.displacy.parse_deps(doc, options)
+
+
+POSMODELS = {
+}
+
+def getPOSModel(model_name):
+    if model_name not in POSMODELS:
+        nlp = spacy.load(model_name)
+        nlp.remove_pipe("parser")
+        nlp.remove_pipe("ner")
+        POSMODELS[model_name] = nlp
+    return POSMODELS[model_name]
+    
 
 @hug.post("/tag")
 def tag(
@@ -63,7 +80,7 @@ def tag(
     print("TAG=====")
     print("TEXT="+text)
     print("MODEL="+model)
-    nlp = MODELS[model]
+    nlp = getPOSModel(model)
     doc = nlp(text)
     return [[token.text, token.lemma_, token.pos_, token.tag_, token.dep_,
             token.shape_, token.is_alpha, token.is_stop]
@@ -76,7 +93,7 @@ def ent(text: str, model: str):
     print("ENT=====")
     print("TEXT="+text)
     print("MODEL="+model)
-    nlp = MODELS[model]
+    nlp = getModel(model)
     doc = nlp(text)
     return [
         {"start": ent.start_char, "end": ent.end_char, "label": ent.label_}

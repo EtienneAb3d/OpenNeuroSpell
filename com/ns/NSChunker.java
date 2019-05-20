@@ -8,7 +8,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class NSChunker {
-	static final boolean _DEBUG_ALL = true;
+	static final boolean _DEBUG_ALL = false;
 	static final boolean _DEBUG = false;
 	
 	class NSChunkerChunk{
@@ -52,6 +52,7 @@ public class NSChunker {
 	}
 	
 	void loadRules() throws Exception {
+		System.out.println("LOADING CHUNKER RULES: "+lng+".tsv");
 		BufferedReader aBR = new BufferedReader(
 				new InputStreamReader(NSChunker.class.getResourceAsStream("chunkrules/"+lng+".tsv")));
 		String aLine = null;
@@ -325,9 +326,7 @@ public class NSChunker {
 		
 		TaggedSent aLTTS = new TaggedSent();
 		aLTTS.text = aTxt;
-		ClientLT aLT = new ClientLT(lng);
-
-		Thread aThLTC = aLT.getTagBatch(aLTTS, lng, ltLayers);
+		Thread aThLTC = ClientLT.getTagBatch(aLTTS, lng, ltLayers);
 		
 		TaggedSent aSpaCyTS = new TaggedSent();
 		aSpaCyTS.text = aTxt;
@@ -346,7 +345,7 @@ public class NSChunker {
 			aPolyglotTh.join();
 		}
 		
-		aLT.releaseLT();
+		
 		
 //		System.out.println("LanguageTool: "+aLTC);
 		

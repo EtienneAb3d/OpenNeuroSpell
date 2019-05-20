@@ -37,6 +37,7 @@ SPACY	//=====	special layer for spaCy rewriting
 +VB	VERB	.*\tVB
 +VBX	AUX	.*\t(BES|HSV)	//"be" "have"
 
++POS	PART	.*\tPOS
 
 //==================================================
 LAYER	//=====	spaCy/polyglot simple balancing
@@ -99,14 +100,15 @@ NUM	&NUM;((&SPACE;|&ADP;|&HYP;|&SLSH;|&PUNCT;|&CONJ;)&NUM;)+	//"8 à 10"
 
 PRON	&PRON;+	//"nous nous"
 
+NOUN/NOUN	&_NOUN_;&POS;
 NOUN	&NOUN;&ADV;+(&ADJ;|&VBN;)	//"caractère bien trempé"
 
-VB/PART	&_PART_;(&VERB;|&VB;)	.*	[tT][oO] .*	//"to consider"
+VB/PART,+(VERB|VB)>VB	&_PART_;(&_VERB_;|&_VB_;)	.*	[tT][oO] .*	//"to consider"
 
 VERB	(&QBEG;|&QUOT;)&VERB;(&QEND;|&QUOT;)	//"« peut »"
 VERB	(&ADV;|&VBN;|&VB;|&VERB;|&AUX;)*(&VERB;|&AUX;)+(&ADV;*(&VB;|&VBN;|&VBX;|&VBXN;))*	//"a été rapidement mangé" "peuvent être" "ne seraient pas"
 VERB	&VERB;&CONJ;&VERB;	//"commandé et fabriqué"
-VERB	(&VERB;|&AUX;)(&ADP;|&ADJ;|&VB;|&VBX;)	//"voted down" "was due" "would bring"
+VERB/PART	&ADJ;+(&VERB;|&AUX;)(&_PART_;|&ADP;|&VB;|&VBX;)	//"voted down" "was due" "would bring" "swap in"
 
 ADJ	(&QBEG;|&QUOT;)&ADJ;(&QEND;|&QUOT;)	//"« saine »"
 ADJ/ADJ,VBN	&_ADJ_;((&CONJ;|&SLSH;)*(&_ADJ_;|&_VBN_;))+	//"rouge et vert" "jolie et maquillée"
@@ -124,7 +126,7 @@ ADV	&ADP;&ADV;	//"par ailleurs"
 ADV	&ADV;+&ADJ;	//"naturellement présente" "également paritaires"
 
 VBG	&ADP;&PRON;?(&VBG;|&VERB;|&AUX;)	.*	[bB][yY] .*	//"en berçant" "en se berçant"
-VBG	&VBG;(&ADV;|&ADJ;)+	//"en marchant très vite"
+VBG	(&ADV;|&ADJ;)+&VBG;	//"fast reading"
 
 VBN	&VBN;&ADP;	//"voted down"
 VBN	(&QBEG;|&QUOT;)&VBN;(&QEND;|&QUOT;)	//"« marqué »"
