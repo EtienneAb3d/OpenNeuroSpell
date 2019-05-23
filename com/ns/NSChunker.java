@@ -11,17 +11,6 @@ public class NSChunker {
 	static final boolean _DEBUG_ALL = false;
 	static final boolean _DEBUG = false;
 	
-	class NSChunkerChunk{
-		public String chunk = null;
-		public String pos = null;
-		public String idxPos = null;
-		public String posExt = null;
-		public String tagExt = null;
-		public boolean hasFem = false;
-		public boolean hasPlur = false;
-		public Vector<NSChunkerWord> words = new Vector<NSChunkerWord>();
-	}
-	
 	class NSChunkerRule{
 		String ruleDef = null;
 		String patternPOSDef = null;
@@ -43,12 +32,14 @@ public class NSChunker {
 
 	NSAligner aligner = null;
 	boolean usePolyglot = true;
+	boolean useLT = true;
 
-	public NSChunker(String aLng,boolean aUsePolyglot) throws Exception {
+	public NSChunker(String aLng,boolean aUsePolyglot,boolean aUseLT) throws Exception {
 		lng = aLng.toLowerCase();
 		loadRules();
 		aligner = new NSAligner();
 		usePolyglot = aUsePolyglot;
+		useLT = aUseLT;
 	}
 	
 	void loadRules() throws Exception {
@@ -172,8 +163,8 @@ public class NSChunker {
 		return aR;
 	}
 	
-	Vector<NSChunkerChunk> buildChunks(Vector<NSChunkerWord> aWs,String aPosStr)  throws Exception {
-		Vector<NSChunkerChunk> aChunks = new Vector<NSChunkerChunk>();
+	Vector<NSChunk> buildChunks(Vector<NSToken> aWs,String aPosStr)  throws Exception {
+		Vector<NSChunk> aChunks = new Vector<NSChunk>();
 		String[] aPosToks = aPosStr.replaceAll(" +", " ").trim().split(" ");
 		for(String aPosTok : aPosToks) {
 			aChunks.add(buildChunk(aWs, aPosTok));
@@ -181,11 +172,11 @@ public class NSChunker {
 		return aChunks;
 	}
 	
-	NSChunkerChunk buildChunk(Vector<NSChunkerWord> aWs,String aPosTok)  throws Exception {
+	NSChunk buildChunk(Vector<NSToken> aWs,String aPosTok)  throws Exception {
 		return buildChunk(aWs, aPosTok, 0);
 	}
-	NSChunkerChunk buildChunk(Vector<NSChunkerWord> aWs,String aPosTok,int aStartIdx)  throws Exception {
-		NSChunkerChunk aChunk = new NSChunkerChunk();
+	NSChunk buildChunk(Vector<NSToken> aWs,String aPosTok,int aStartIdx)  throws Exception {
+		NSChunk aChunk = new NSChunk();
 		aChunk.pos = aPosTok.replaceAll("[0-9,]", "");
 		int aS = Integer.parseInt(aPosTok.replaceAll(",.*", ""));
 		int aE = Integer.parseInt(aPosTok.replaceAll("(.*,|[^0-9,]+)", ""));
@@ -195,12 +186,12 @@ public class NSChunker {
 		StringBuffer aTagSB = new StringBuffer();
 		int aIdx = aStartIdx;
 		for(int p = aS;p<=aE;p++) {
-			NSChunkerWord aW = aWs.elementAt(p);
+			NSToken aW = aWs.elementAt(p);
 			if(aW.doNotPrint) {
 				continue;
 			}
-			aChunk.words.add(aW);
-			aChunkSB.append(" "+aW.word);
+			aChunk.tokens.add(aW);
+			aChunkSB.append(" "+aW.token);
 			aPosSB.append(" "+aW.pos+" ");
 			aIdxPosSB.append(" "+aIdx+","+aIdx+aW.pos+" ");
 			aIdx++;
@@ -222,8 +213,8 @@ public class NSChunker {
 		return aChunk;
 	}
 	
-	void disambiguate(Vector<NSChunkerWord> aWs,Vector<String> aDs) throws Exception {
-		for(NSChunkerWord aW : aWs) {
+	void disambiguate(Vector<NSToken> aWs,Vector<String> aDs) throws Exception {
+		for(NSToken aW : aWs) {
 			for(String aD : aDs) {
 				if(aD.startsWith("+")) {
 					String[] aParts = aD.substring(1).split(">");
@@ -247,7 +238,7 @@ public class NSChunker {
 		}
 	}
 	
-	String applyRules(Vector<Vector<NSChunkerRule>> aRuleLayers,Vector<NSChunkerWord> aWs,String aPosStr) throws Exception {
+	String applyRules(Vector<Vector<NSChunkerRule>> aRuleLayers,Vector<NSToken> aWs,String aPosStr) throws Exception {
 		if(_DEBUG || NSChunker._DEBUG_ALL) {
 			System.out.println(aPosStr);
 		}
@@ -270,7 +261,7 @@ public class NSChunker {
 		return aPosStr;
 	}
 	
-	String applyRule(Vector<NSChunkerWord> aWs,NSChunkerRule aR,String aPosStr) throws Exception {
+	String applyRule(Vector<NSToken> aWs,NSChunkerRule aR,String aPosStr) throws Exception {
 		Matcher aM = aR.patternPOS.matcher(aPosStr);
 		while(aM.find()) {
 			String aChunk = aPosStr.substring(aM.start(),aM.end());
@@ -283,7 +274,7 @@ public class NSChunker {
 				//No change
 				continue;
 			}
-			NSChunkerChunk aC = buildChunk(aWs, aPosNew.trim());
+			NSChunk aC = buildChunk(aWs, aPosNew.trim());
 			if(aR.patternTag != null || aR.patternText != null) {
 				if(aR.patternTag != null && !aR.patternTag.matcher(aC.tagExt).matches()){
 					//Ignore
@@ -295,7 +286,7 @@ public class NSChunker {
 				}
 			}
 			if(aR.desambiguates.size() > 0) {
-				disambiguate(aC.words,aR.desambiguates);
+				disambiguate(aC.tokens,aR.desambiguates);
 			}
 			if(aR.hardReplacePOS && aS == aE) {
 				//Hard rewriting of word POS
@@ -322,83 +313,115 @@ public class NSChunker {
 		return null;
 	}
 	
-	public TaggedSent process(String aTxt) throws Exception {
+	Vector<NSTaggedSent> split2TSs(String aTxt) throws Exception {
+		Vector<NSTaggedSent> aTSs = new Vector<NSTaggedSent>();
+		String[] aSents = aTxt.split("\n");
+		for(String aSent : aSents) {
+			NSTaggedSent aTS = new NSTaggedSent();
+			aTS.text = aSent;
+			aTSs.add(aTS);
+		}
+		return aTSs;
+	}
+	
+	public Vector<NSTaggedSent> process(String aTxt) throws Exception {
 		
-		TaggedSent aLTTS = new TaggedSent();
-		aLTTS.text = aTxt;
-		Thread aThLTC = ClientLT.getTagBatch(aLTTS, lng, ltLayers);
+		Vector<NSTaggedSent> aSpaCyTSs = split2TSs(aTxt);
+		Thread aSpaCyTh = ClientSpacy.getTagBatch(aSpaCyTSs,lng, spaCyLayers);
 		
-		TaggedSent aSpaCyTS = new TaggedSent();
-		aSpaCyTS.text = aTxt;
-		Thread aSpaCyTh = ClientSpacy.getTagBatch(aSpaCyTS,lng, spaCyLayers);
-		
-		TaggedSent aPolyglotTS = new TaggedSent();
-		Thread aPolyglotTh = null;
-		if(usePolyglot) {
-			aPolyglotTS.text = aTxt;
-			aPolyglotTh = ClientPolyglot.getTagBatch(aPolyglotTS,lng);
+		Vector<NSTaggedSent> aLTTSs = split2TSs(aTxt);
+		Thread aThLTC = null;
+		if(useLT) {
+			aThLTC = ClientLT.getTagBatch(aLTTSs, lng, ltLayers);
 		}
 		
-		aThLTC.join();
+		Vector<NSTaggedSent> aPolyglotTSs = split2TSs(aTxt);
+		Thread aPolyglotTh = null;
+		if(usePolyglot) {
+			aPolyglotTh = ClientPolyglot.getTagBatch(aPolyglotTSs,lng);
+		}
+		
 		aSpaCyTh.join();
+		if(useLT) {
+			aThLTC.join();
+		}
 		if(usePolyglot) {
 			aPolyglotTh.join();
 		}
-		
-		
-		
-//		System.out.println("LanguageTool: "+aLTC);
-		
-		TaggedSent aFusedTS = aligner.fusPos(aSpaCyTS, aPolyglotTS,aLTTS);
-		if(_DEBUG || NSChunker._DEBUG_ALL) {
-			System.out.println("FUSED POS: "+aFusedTS.idxPos);
-		}
-		
-		aFusedTS.chunks = buildChunks(aFusedTS.words,applyRules(ruleLayers,aFusedTS.words,aFusedTS.idxPos));
 
-		//Rebuild disambiguated pos
-		StringBuffer aPosSB = new StringBuffer();
-		for(int w = 0;w < aFusedTS.words.size();w++) {
-			NSChunkerWord aW = aFusedTS.words.elementAt(w);
-			aPosSB.append(" "+w+","+w+aW.pos+" ");
-		}
-		aFusedTS.idxPos = aPosSB.toString();
+		Vector<NSTaggedSent> aFusedTSs = new Vector<NSTaggedSent>();
+		for(int s = 0;s < aSpaCyTSs.size();s++) {
+			NSTaggedSent aSpaCyTS = aSpaCyTSs.elementAt(s);
+			NSTaggedSent aPolyglotTS = aPolyglotTSs.elementAt(s);
+			NSTaggedSent aLTTS = aLTTSs.elementAt(s);
+			
+			NSTaggedSent aFusedTS = aligner.fusPos(aSpaCyTS, aPolyglotTS,aLTTS);
+			if(_DEBUG || NSChunker._DEBUG_ALL) {
+				System.out.println("FUSED POS: "+aFusedTS.idxPos);
+			}
 
-		aFusedTS.extracts = new Vector<NSChunkerChunk>();
-		for(NSChunkerChunk aC : aFusedTS.chunks) {
-			for(NSChunkerChunk aX : buildChunks(aC.words,applyRules(ruleExtracts,aC.words,aC.idxPos))) {
-				if(aX.pos.startsWith("~")) {
-					aFusedTS.extracts.add(aX);
+			try {
+				aFusedTS.chunks = buildChunks(aFusedTS.tokens,applyRules(ruleLayers,aFusedTS.tokens,aFusedTS.idxPos));
+			}
+			catch(Throwable t) {
+				t.printStackTrace(System.err);
+				System.err.println("s= "+s);
+				System.err.println("FUSTXT: ["+aFusedTS.text+"]");
+				System.err.println("FUSPOS: ["+aFusedTS.idxPos+"]");
+				System.err.println("SPCYTXT: ["+aSpaCyTS.text+"]");
+				System.err.println("SPCYPOS: ["+aSpaCyTS.idxPos+"]");
+				System.err.println("ORIG: ["+aTxt+"]");
+				//??
+				System.exit(-1);
+			}
+
+			//Rebuild disambiguated pos
+			StringBuffer aPosSB = new StringBuffer();
+			for(int w = 0;w < aFusedTS.tokens.size();w++) {
+				NSToken aW = aFusedTS.tokens.elementAt(w);
+				aPosSB.append(" "+w+","+w+aW.pos+" ");
+			}
+			aFusedTS.idxPos = aPosSB.toString();
+
+			aFusedTS.extracts = new Vector<NSChunk>();
+			for(NSChunk aC : aFusedTS.chunks) {
+				for(NSChunk aX : buildChunks(aC.tokens,applyRules(ruleExtracts,aC.tokens,aC.idxPos))) {
+					if(aX.pos.startsWith("~")) {
+						aFusedTS.extracts.add(aX);
+					}
 				}
 			}
+			
+			aFusedTSs.add(aFusedTS);
 		}
-
-		return aFusedTS;
+		
+		return aFusedTSs;
 	}
 
 	public static void main(String[] args) {
 		try {
-			TaggedSent aTS = new NSChunker(TestData.lng,true).process(TestData.text);
+			Vector<NSTaggedSent> aTSs = new NSChunker(TestData.lng,true,true).process(TestData.text);
 
-			System.out.println("__________\n"
-					+ "Disambiguations:");
-			for(int w = 0;w < aTS.words.size();w++) {
-				NSChunkerWord aW = aTS.words.elementAt(w);
-				System.out.println(aW.word+"\t"+aW.posOrig+"\t=>\t"+aW.pos);
-			}
+			for(NSTaggedSent aTS : aTSs) {
+				System.out.println("__________\n"
+						+ "Disambiguations:");
+				for(int w = 0;w < aTS.tokens.size();w++) {
+					NSToken aW = aTS.tokens.elementAt(w);
+					System.out.println(aW.token+"\t"+aW.posOrig+"\t=>\t"+aW.pos);
+				}
 
-			System.out.println("__________\n"
-					+ "Chunks:");
-			for(NSChunkerChunk aC : aTS.chunks) {
-				System.out.println(aC.chunk+"\t"+aC.pos+" F="+aC.hasFem+" P="+aC.hasPlur+" posExt="+aC.posExt);
-			}
+				System.out.println("__________\n"
+						+ "Chunks:");
+				for(NSChunk aC : aTS.chunks) {
+					System.out.println(aC.chunk+"\t"+aC.pos+" F="+aC.hasFem+" P="+aC.hasPlur+" posExt="+aC.posExt);
+				}
 
-			System.out.println("__________\n"
-					+ "Extracts:");
-			for(NSChunkerChunk aC : aTS.extracts) {
-				System.out.println(aC.chunk+"\t"+aC.pos+" F="+aC.hasFem+" P="+aC.hasPlur+" posExt="+aC.posExt);
+				System.out.println("__________\n"
+						+ "Extracts:");
+				for(NSChunk aC : aTS.extracts) {
+					System.out.println(aC.chunk+"\t"+aC.pos+" F="+aC.hasFem+" P="+aC.hasPlur+" posExt="+aC.posExt);
+				}
 			}
-		
 		}
 		catch(Throwable t) {
 			t.printStackTrace(System.err);

@@ -20,45 +20,8 @@ public class ClientLT {
 	static HashMap<String,Vector<JLanguageTool>> langToolPools = new HashMap<String,Vector<JLanguageTool>>();
 	
 	String lng = null;
-
-	public static JLanguageTool getLT(String aLng) throws Exception {
-		Vector<JLanguageTool> aLangToolPool = null;
-		synchronized(langToolPools){
-			aLangToolPool = langToolPools.get(aLng);
-			if(aLangToolPool == null) {
-				aLangToolPool = new Vector<JLanguageTool>();
-				langToolPools.put(aLng,aLangToolPool);
-			}
-		}
-		JLanguageTool aLangTool = null;
-		synchronized(aLangToolPool){
-			if(aLangToolPool.size() > 0) {
-				aLangTool = aLangToolPool.remove(0);
-			}
-			else {
-				aLangTool = new MultiThreadedJLanguageTool(Languages.getLanguageForShortCode(aLng),4);
-			}
-		}
-		return aLangTool;
-	}
 	
-	public static void releaseLT(String aLng,JLanguageTool aLangTool) throws Exception {
-		Vector<JLanguageTool> aLangToolPool = null;
-		synchronized(langToolPools){
-			aLangToolPool = langToolPools.get(aLng);
-			if(aLangToolPool == null) {
-				//??
-				aLangToolPool = new Vector<JLanguageTool>();
-				langToolPools.put(aLng,aLangToolPool);
-			}
-		}
-		synchronized(aLangToolPool) {
-			aLangToolPool.add(aLangTool);
-			aLangTool = null;
-		}
-	}
-	
-	public static Thread getTagBatch(final TaggedSent aTS,final String aLng,Vector<Vector<NSChunkerRule>> aLtLayers) throws Exception {
+	public static Thread getTagBatch(final Vector<NSTaggedSent> aTSs,final String aLng,Vector<Vector<NSChunkerRule>> aLtLayers) throws Exception {
 		if(_DEBUG || NSChunker._DEBUG_ALL) {
 			System.out.println("##########TAG polyglot");
 		}
@@ -67,21 +30,43 @@ public class ClientLT {
 			@Override
 			public void run() {
 				try{
-					JLanguageTool aLangTool = ClientLT.getLT(aLng);
+					JLanguageTool aLangTool = new MultiThreadedJLanguageTool(Languages.getLanguageForShortCode(aLng),4); 
+//							ClientLT.getLT(aLng);
+					
+					StringBuffer aSB = new StringBuffer();
+					for(NSTaggedSent aTS : aTSs) {
+						if(aSB.length() > 0) {
+							aSB.append("\n");
+						}
+						aSB.append(aTS.text);
+					}
+					
 					ArrayList<String> aSents = new ArrayList<String>();
-					String aTxt = aTS.text.replaceAll("["+NSUtils.allapos+"]", "'");
+					String aTxt = aSB.toString().replaceAll("["+NSUtils.allapos+"]", "'");
 					aSents.add(aTxt);
 					List<AnalyzedSentence> aASents = aLangTool.analyzeSentences(aSents);
 					
-					ClientLT.releaseLT(aLng,aLangTool);
+//					ClientLT.releaseLT(aLng,aLangTool);
 					
-					int aCountW = 0;
 					StringBuffer aPosSB = new StringBuffer();
+					int aIdxTS = 0;
+					NSTaggedSent aTS = aTSs.elementAt(aIdxTS);
+					aTS.tokens = new Vector<NSToken>();//Be sure it's fresh (possible recurrent call)
+					int aCountW = 0;
 					for(AnalyzedSentence aAS : aASents) {
 						for(AnalyzedTokenReadings aATR : aAS.getTokens()) {
-								NSChunkerWord aW = new NSChunkerWord();
-								aW.word = aATR.getToken();
-								if(aW.word == null || aW.word.trim().isEmpty()) {
+								NSToken aW = new NSToken();
+								aW.token = aATR.getToken();
+
+								if("\n".equals(aW.token)) {
+									aIdxTS++;
+									aTS = aTSs.elementAt(aIdxTS);
+									aTS.tokens = new Vector<NSToken>();//Be sure it's fresh (possible recurrent call)
+									aCountW = 0;
+									continue;
+								}
+								
+								if(aW.token == null || aW.token.trim().isEmpty()) {
 									//Beg/Start/Spc ?
 									continue;
 								}
@@ -108,7 +93,7 @@ public class ClientLT {
 										for(Vector<NSChunkerRule> aLayer : aLtLayers) {
 											for(NSChunkerRule aR : aLayer) {
 												if(aR.patternPOS.matcher(aPOS).matches()) {
-													if(aR.patternText != null && !aR.patternText.matcher(aW.word).matches()) {
+													if(aR.patternText != null && !aR.patternText.matcher(aW.token).matches()) {
 														//Ignore
 														continue;
 													}
@@ -130,7 +115,7 @@ public class ClientLT {
 								aW.lemma = aLemmaSB.toString().trim();
 								aW.pos = aPOSSB.toString().replaceAll(" +", " ").trim();
 								aW.tag = aTagSB.toString().trim();
-								aTS.words.add(aW);
+								aTS.tokens.add(aW);
 								aPosSB.append(" "+aCountW+","+aCountW+aW.pos+" ");
 								aCountW++;
 						}

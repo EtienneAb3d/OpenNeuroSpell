@@ -53,7 +53,7 @@ public class ClientSpacy {
 		return aModel;
 	}
 
-	public static Thread getTagBatch(final TaggedSent aTS,final String aLng,Vector<Vector<NSChunkerRule>> aLtLayers) throws Exception {
+	public static Thread getTagBatch(final Vector<NSTaggedSent> aTSs,final String aLng,Vector<Vector<NSChunkerRule>> aLtLayers) throws Exception {
 		if(_DEBUG || NSChunker._DEBUG_ALL) {
 			System.out.println("##########TAG spaCy");
 		}
@@ -63,8 +63,16 @@ public class ClientSpacy {
 				try {
 					String aModel = getModel(aLng);
 
+					StringBuffer aSB = new StringBuffer();
+					for(NSTaggedSent aTS : aTSs) {
+						if(aSB.length() > 0) {
+							aSB.append("\n");
+						}
+						aSB.append(aTS.text);
+					}
+					
 					Post aPost = new Post();
-					String aTxt = aTS.text.replaceAll("["+NSUtils.allapos+"]", "'");
+					String aTxt = aSB.toString().replaceAll("["+NSUtils.allapos+"]", "'");
 					aPost.setPostParms(
 							"text",aTxt,
 						    "model",aModel
@@ -78,22 +86,48 @@ public class ClientSpacy {
 					JSONArray aJSO = (JSONArray)parser.parse(aRep);
 
 					StringBuffer aPosSB = new StringBuffer();
+					int aIdxTS = 0;
+					NSTaggedSent aTS = aTSs.elementAt(aIdxTS);
+					aTS.tokens = new Vector<NSToken>();//Be sure it's fresh (possible recurrent call)
 					int aCountW = 0;
+					boolean aSomethingWrong = false;
 					for(Object aO : aJSO) {
 						if(_DEBUG || NSChunker._DEBUG_ALL) {
 							System.out.println("SPW: "+aO);
 						}
 						JSONArray aA = (JSONArray)aO;
-						NSChunkerWord aW = new NSChunkerWord();
-						aW.word = (String)aA.get(0);
+						NSToken aW = new NSToken();
+						aW.token = (String)aA.get(0);
+
+						if("\n".equals(aW.token)) {
+							aTS.idxPos = aPosSB.toString();
+							aPosSB = new StringBuffer();
+							
+							aIdxTS++;
+							aTS = aTSs.elementAt(aIdxTS);
+							aTS.tokens = new Vector<NSToken>();//Be sure it's fresh (possible recurrent call)
+							aCountW = 0;
+							continue;
+						}
+						
+						if(aPosSB.length() <= 0) {
+							if(!aTS.text.replaceAll("["+NSUtils.allapos+"]", "'").startsWith(aW.token)) {
+								System.err.println("NOT GOOD START");
+								aSomethingWrong = true;
+								break;
+//								System.exit(-1);
+							}
+						}
+						
 						aW.lemma = (String)aA.get(1);
 						aW.pos = (String)aA.get(2);
 						aW.tag = aW.lemma+"\t"+(String)aA.get(3);
-						aTS.words.add(aW);
+						
+						aTS.tokens.add(aW);
 						for(Vector<NSChunkerRule> aLayer : aLtLayers) {
 							for(NSChunkerRule aR : aLayer) {
 								if(aR.patternPOS.matcher(aW.pos).matches()) {
-									if(aR.patternText != null && !aR.patternText.matcher(aW.word).matches()) {
+									if(aR.patternText != null && !aR.patternText.matcher(aW.token).matches()) {
 										//Ignore
 										continue;
 									}
@@ -110,6 +144,21 @@ public class ClientSpacy {
 						aCountW++;
 					}
 					aTS.idxPos = aPosSB.toString();
+					if(aIdxTS != aTSs.size()-1) {
+						System.err.println("BAD COUNT: "+aTSs.size()+" in / "+(aIdxTS+1)+" out");
+						aSomethingWrong = true;
+//						System.exit(-1);
+					}
+					if(aSomethingWrong && aTSs.size() > 1) {
+						//?? Do one by one to avoid loosing something
+						for(NSTaggedSent aTS2 : aTSs) {
+							Vector<NSTaggedSent> aTSs2 = new Vector<NSTaggedSent>();
+							aTSs2.add(aTS2);
+							Thread aTh = getTagBatch(aTSs2, aLng, aLtLayers);
+							aTh.join();
+						}
+					}
+
 				}
 				catch(Throwable t) {
 					t.printStackTrace(System.err);
@@ -245,8 +294,23 @@ public class ClientSpacy {
 	}
 	
 	public static void main(String[] args) {
-		// TODO Auto-generated method stub
-
+		try {
+			Vector<NSTaggedSent> aTSs = new Vector<NSTaggedSent>();
+			NSTaggedSent aTS = new NSTaggedSent();
+			aTS.text = 
+					"‘Libéraux contre populistes' : la médiatisation à outrance de ce clivage vise à contraindre les populations à choisir l'un de ces deux maux. ➟ (In. ‘Tous populistes !' #MDV164)";
+			aTSs.add(aTS);
+			NSTaggedSent aTS2 = new NSTaggedSent();
+			aTS2.text = "Ceci est une deuxième phrase pour tester.";
+			aTSs.add(aTS2);
+			Thread aTh = ClientSpacy.getTagBatch(aTSs, "fr",new Vector<Vector<NSChunkerRule>>());
+			aTh.join();
+			System.out.println("POS: "+aTS.idxPos);
+			System.out.println("POS: "+aTS2.idxPos);
+		}
+		catch(Throwable t) {
+			t.printStackTrace(System.err);
+		}
 	}
 
 }

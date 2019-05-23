@@ -1,5 +1,7 @@
 package com.ns;
 
+import java.util.Vector;
+
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
@@ -11,7 +13,7 @@ public class ClientPolyglot {
 
 	static int port = 8081;
 
-	public static Thread getTagBatch(final TaggedSent aTS,final String aLng) throws Exception {
+	public static Thread getTagBatch(final Vector<NSTaggedSent> aTSs,final String aLng) throws Exception {
 		if(_DEBUG || NSChunker._DEBUG_ALL) {
 			System.out.println("##########TAG polyglot");
 		}
@@ -19,12 +21,21 @@ public class ClientPolyglot {
 			@Override
 			public void run() {
 				try {
+					StringBuffer aSB = new StringBuffer();
+					for(NSTaggedSent aTS : aTSs) {
+						if(aSB.length() > 0) {
+							aSB.append("\n");
+						}
+						aSB.append(aTS.text);
+					}
+					
 					Post aPost = new Post();
-					String aTxt = aTS.text.replaceAll("["+NSUtils.allapos+"]", "'");
+					String aTxt = aSB.toString().replaceAll("["+NSUtils.allapos+"]", "'");
 					aPost.setPostParms("text",aTxt,
 							"lng",aLng
 							);
 
+//					String aRep = aPost.send("localhost",port,"/tagOnly", "utf-8");
 					String aRep = aPost.send("localhost",port,"/tag", "utf-8");
 					if(_DEBUG || NSChunker._DEBUG_ALL) {
 						System.out.println("POLYGLOT="+aRep);
@@ -33,18 +44,34 @@ public class ClientPolyglot {
 					JSONArray aJSO = (JSONArray)parser.parse(aRep);
 
 					StringBuffer aPosSB = new StringBuffer();
+					int aIdxTS = 0;
+					NSTaggedSent aTS = aTSs.elementAt(aIdxTS);
+					aTS.tokens = new Vector<NSToken>();//Be sure it's fresh (possible recurrent call)
 					int aCountW = 0;
 					for(Object aO : aJSO) {
 						if(_DEBUG || NSChunker._DEBUG_ALL) {
 							System.out.println("PGW: "+aO);
 						}
 						JSONArray aA = (JSONArray)aO;
-						NSChunkerWord aW = new NSChunkerWord();
-						aW.word = (String)aA.get(0);
+						NSToken aW = new NSToken();
+						aW.token = (String)aA.get(0);
+						
+						if("\n".equals(aW.token)
+								|| "\\n".equals(aW.token)) {
+							aTS.idxPos = aPosSB.toString();
+							aPosSB = new StringBuffer();
+							
+							aIdxTS++;
+							aTS = aTSs.elementAt(aIdxTS);
+							aTS.tokens = new Vector<NSToken>();//Be sure it's fresh (possible recurrent call)
+							aCountW = 0;
+							continue;
+						}
+						
 						aW.lemma = "";
 						aW.pos = (String)aA.get(1);
 						aW.tag = "";
-						aTS.words.add(aW);
+						aTS.tokens.add(aW);
 						aPosSB.append(" "+aCountW+","+aCountW+aW.pos+" ");
 						aCountW++;
 					}
@@ -117,8 +144,22 @@ public class ClientPolyglot {
 	}
 
 	public static void main(String[] args) {
-		// TODO Auto-generated method stub
-
+		try {
+			Vector<NSTaggedSent> aTSs = new Vector<NSTaggedSent>();
+			NSTaggedSent aTS = new NSTaggedSent();
+			aTS.text = "Ceci est une phrase pour tester [1].";
+			aTSs.add(aTS);
+			NSTaggedSent aTS2 = new NSTaggedSent();
+			aTS2.text = "Ceci est une deuxième phrase pour tester.";
+			aTSs.add(aTS2);
+			Thread aTh = ClientPolyglot.getTagBatch(aTSs, "fr");
+			aTh.join();
+			System.out.println("POS: "+aTS.idxPos);
+			System.out.println("POS: "+aTS2.idxPos);
+		}
+		catch(Throwable t) {
+			t.printStackTrace(System.err);
+		}
 	}
 
 }

@@ -37,6 +37,8 @@ SPACY	//=====	special layer for spaCy rewriting
 +VB	VERB	.*\tVB
 +VBX	AUX	.*\t(BES|HSV)	//"be" "have"
 
++AUX	VERB	.*\tMD	//"will"
+
 +POS	PART	.*\tPOS
 
 //==================================================
@@ -101,14 +103,14 @@ NUM	&NUM;((&SPACE;|&ADP;|&HYP;|&SLSH;|&PUNCT;|&CONJ;)&NUM;)+	//"8 à 10"
 PRON	&PRON;+	//"nous nous"
 
 NOUN/NOUN	&_NOUN_;&POS;
-NOUN	&NOUN;&ADV;+(&ADJ;|&VBN;)	//"caractère bien trempé"
 
-VB/PART,+(VERB|VB)>VB	&_PART_;(&_VERB_;|&_VB_;)	.*	[tT][oO] .*	//"to consider"
+VB/PART,+(VERB|VB)>VB	&_PART_;(&_AUX_;|&_VERB_;|&_VB_;)	.*	[tT][oO] .*	//"to consider"
 
-VERB	(&QBEG;|&QUOT;)&VERB;(&QEND;|&QUOT;)	//"« peut »"
-VERB	(&ADV;|&VBN;|&VB;|&VERB;|&AUX;)*(&VERB;|&AUX;)+(&ADV;*(&VB;|&VBN;|&VBX;|&VBXN;))*	//"a été rapidement mangé" "peuvent être" "ne seraient pas"
-VERB	&VERB;&CONJ;&VERB;	//"commandé et fabriqué"
-VERB/PART	&ADJ;+(&VERB;|&AUX;)(&_PART_;|&ADP;|&VB;|&VBX;)	//"voted down" "was due" "would bring" "swap in"
+VBN	&VB;&VBN;	.*	[tT][oO] .*	//"to be provided"
+
+VERB	(&QBEG;|&QUOT;)&VERB;(&QEND;|&QUOT;)	//"« can »"
+VERB	&VERB;&CONJ;&VERB;	//
+VERB	(&ADV;|&ADJ;)*&AUX;(&_VERB_;|&_VB_;)	//"will comme"
 
 ADJ	(&QBEG;|&QUOT;)&ADJ;(&QEND;|&QUOT;)	//"« saine »"
 ADJ/ADJ,VBN	&_ADJ_;((&CONJ;|&SLSH;)*(&_ADJ_;|&_VBN_;))+	//"rouge et vert" "jolie et maquillée"
@@ -116,7 +118,6 @@ ADJ	&ADJ;&ADP;(&NUM;|&NOUN;|&ADJ;|&ADP;)*(&NUM;|&NOUN;|&ADJ;)+	//"agés de six m
 ADJ	&VBG;&ADP;&DET;?&NOUN;	//"contenant du sable" "produisant de la valeur"
 
 ADP	(&QBEG;|&QUOT;)&ADP;(&QEND;|&QUOT;)	//"« près »"
-ADP	&ADP;&ADP;	//"en avant" 
 ADP	&ADV;&ADP;	//"plus près"
 ADP	&ADP;&VB;?(&DET;|&ADP;)	.*	.* d[eu']	//"près de" "à partir du" "à compter de"
 
@@ -128,8 +129,8 @@ ADV	&ADV;+&ADJ;	//"naturellement présente" "également paritaires"
 VBG	&ADP;&PRON;?(&VBG;|&VERB;|&AUX;)	.*	[bB][yY] .*	//"en berçant" "en se berçant"
 VBG	(&ADV;|&ADJ;)+&VBG;	//"fast reading"
 
-VBN	&VBN;&ADP;	//"voted down"
 VBN	(&QBEG;|&QUOT;)&VBN;(&QEND;|&QUOT;)	//"« marqué »"
+VBN	&VBN;&CONJ;&VBN;	//"created and provided"
 
 VBXN	&VBX;(&ADV;|&ADJ;|&AUX;)*&VBN;	//"avoir pris" "avoir été interrogés"
 
@@ -140,16 +141,16 @@ PRON	&QUOT;&PRON;&QUOT;
 PROPN	&QUOT;&PROPN;&QUOT;
 PROPN	&PROPN;+
 
-NOUN	&VBN;&ADP;&NOUN;	.*	.* (of) .*	//"mise en scène" "prise de bec"
 
 PROPN/+.*>PROPN	&PROPN;&ADP;&DET;?&PROPN;	.*	.* (of) .*	//"House of Commons"
 PROPN/+.*>PROPN	&PROPN;((&DET;|&HYP;)*(&PROPN;|&NOUN;))+	//
 PROPN/+VB[NG]>PROPN	&PROPN;(&VB;|&VBN;|&VBG;)	//Typical enterprise name ?
 
-NOUN/ADJ>NOUN	&DET;&ADJ;	//"l'humoriste" (wrong tagging?)
-
 NOUN	(&NUM;&SPACE;)*&NOUN;(&SPACE;&NUM;)*	//Fuse NBSP "2 h 30"
 
+NOUN	&VBN;&ADP;&NOUN;	.*	.* (of) .*	//
+
+NOUN	&VBG;&NOUN;	//"shipping address"
 NOUN/NOUN,PROPN,X	(&DET;|&NOUN;)(&_NOUN_;|&_PROPN_;|&_X_;|&_UNK_;)	//Disambiguate
 NOUN/NOUN,PROPN,X	(&_NOUN_;|&_PROPN_;|&_X_;|&_UNK_;)&NOUN;	//Disambiguate
 PROPN/NOUN,PROPN,X	(&_NOUN_;|&_PROPN_;|&_X_;|&_UNK_;)&PROPN;	//Disambiguate
@@ -160,7 +161,7 @@ PROPN/NOUN,PROPN	(&PROPN;(&HYP;|&SLSH;|&CONJ;)(&_NOUN_;|&_PROPN_;)|(&_NOUN_;|&_P
 NOUN	(&QBEG;|&QUOT;)&NOUN;(&QEND;|&QUOT;)	//"« IBG »"
 NOUN	&PRON;&VB;	//"au dîner"
 NOUN	&NOUN;&HYP;&ADV;	//"prix-là"
-NOUN	((&ADP;*(&ADJ;|&NUM;|&VBN;|&VB;|&ADJ_NOUN;|&DET_ADJ;)+)*(&NOUN;|&PROPN;|&UNK;))+	//"papillon vert saturé" "robe en bleu" "Napoléon I" "pièce à peindre"
+NOUN	(&ADJ;|&NUM;|&VBN;|&VB;|&ADJ_NOUN;|&DET_ADJ;)*(&NOUN;|&PROPN;|&UNK;)	//
 NOUN	(&DET;|&NUM;|&NOUN;)(&NUM;|&ADJ;|&ADV;|&ADP;|&NOUN;)*&NOUN;	//"la grande peinture" "le 21 mars"
 NOUN	(&ADJ;|&NUM;)+&NOUN;	//"premier parti" "deux verres"
 
@@ -177,7 +178,7 @@ ADJ	&VBG;&ADP;&DET;?&NOUN;	//"contenant du sable" "produisant de la valeur"
 ADJ	&ADJ;(&ADP;|&HYP;|&SLSH;|&CONJ;)&ADJ;	//"public ou privé"
 
 NOUN	&NOUN;(&HYP;|&SLSH;|&CONJ;|&DET;|&ADP;)*&NOUN;
-NOUN	&NUM;*((&ADP;*(&ADJ;|&ADV;|&NUM;|&VBN;|&VB;|&ADJ_NOUN;)+)*&NOUN;)+
+NOUN	&NUM;*(&ADJ;|&ADV;|&NUM;|&VBN;|&VB;|&ADJ_NOUN;)*&NOUN;
 
 PROPN	&PROPN;&NUM;
 

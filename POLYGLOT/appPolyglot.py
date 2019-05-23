@@ -4,6 +4,26 @@ from __future__ import unicode_literals
 import hug
 from hug_middleware_cors import CORSMiddleware
 from polyglot.text import Text
+from polyglot.tag import NEChunker, POSTagger
+
+@hug.post("/tagOnly")
+def tagOnly(
+    text: str,
+    lng: str,
+):
+    print("TAG=====(tagOnly)")
+    print("TEXT="+text)
+    print("LNG="+lng)
+    tagger = POSTagger(lang=lng)
+    lines = text.split("\n")
+    taggeds = [];
+    for line in lines:
+        words = line.strip().split()
+        tagged = tagger.annotate(words)
+        if len(taggeds) > 0: 
+            taggeds.extend([["\n","NL"]]);
+        taggeds.extend([[w,p] for w, p in tagged]);
+    return taggeds
 
 @hug.post("/tag")
 def tag(

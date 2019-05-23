@@ -6,7 +6,7 @@ from hug_middleware_cors import CORSMiddleware
 import spacy
 import sys
 
-#spacy.prefer_gpu()
+spacy.prefer_gpu()
 
 #MODELS = {
 #    "en_core_web_sm": spacy.load("en_core_web_sm"),
