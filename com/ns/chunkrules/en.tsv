@@ -32,12 +32,13 @@ PART	(IN|TO|RP)
 //==================================================
 SPACY	//=====	special layer for spaCy rewriting
 
++AUX	VERB	.*\tMD	//"will"
++AUX	(VERB|VBN)	(have|be)\tVB[NZ]	//"has" "been"
+
 +VBG	VERB	.*\tVBG
 +VBN	VERB	.*\tVBN
 +VB	VERB	.*\tVB
 +VBX	AUX	.*\t(BES|HSV)	//"be" "have"
-
-+AUX	VERB	.*\tMD	//"will"
 
 +POS	PART	.*\tPOS
 
@@ -64,6 +65,8 @@ LAYER	//=====	spaCy/polyglot simple balancing
 +VERB	(&AUX_VERB;|&VERB_AUX;)	//Keep VERB
 +NOUN	(&NOUN_PROPN;|&PROPN_NOUN;)	//Keep NOUN
 
++PROPN	&_;	.*\tNNP.*	//Certainly spaCy and polyglot are not agreeing, and LT set something else ? Prefer PROPN
+
 //==================================================
 LAYER	//=====	Special single POS update rules
 
@@ -73,7 +76,7 @@ LAYER	//=====	Special single POS update rules
 +NUM	&_;	.*	[0-9.,+-/]*[0-9]+[0-9.,+-/]*	//Yes, it's a NUM
 +PUNCT	&_PUNCT_;	.*	(?i)[^a-z0-9àäâéèëêïîöôùüû]+	//Yes, it's a PUNCT
 
-+HYP	&PUNCT;	.*	-
++HYP	&_;	.*	-
 +QBEG	&_;	.*	[«“]	//Need to enrich the list
 +QEND	&_;	.*	[»”]	//Need to enrich the list
 +QUOT	&_;	.*	["']	//Need to enrich the list
@@ -84,7 +87,9 @@ LAYER	//=====	Special multi POS update/disambiguation rules
 
 =/NOUN,PROPN	&DET;(&_NOUN_;|&_PROPN_;)	//Keep NOUN or PROPN without aggregation: "le test"
 =/NOUN,PROPN	&ADP;(&NOUN_;|&PROPN_;)	//Keep NOUN or PROPN without aggregation (scpaCy choice)
+=/+VBN>VERB	&VBN;&DET;	//Bad tagging ? "rejected the"
 =/VERB	&_VERB_;&HYP;?(&DET;|&PRON;)	//Keep VERB without aggregation: "Vérifier la" "Rassurez-vous"
+=/+VB>VERB	&PRON;&VB;	.*\tVBP	//Bad spaCy tagging : "I've"
 
 //==================================================
 LAYER	//=====	segmentation errors
@@ -100,26 +105,31 @@ NUM	&NUM;&SPACE;?&_SYM_;	//"11 %"
 NUM	&PUNCT;&NUM;&PUNCT;	.*	[(].*[)]	//"(3)"
 NUM	&NUM;((&SPACE;|&ADP;|&HYP;|&SLSH;|&PUNCT;|&CONJ;)&NUM;)+	//"8 à 10"
 
-PRON	&PRON;+	//"nous nous"
-
 NOUN/NOUN	&_NOUN_;&POS;
 
-VB/PART,+(VERB|VB)>VB	&_PART_;(&_AUX_;|&_VERB_;|&_VB_;)	.*	[tT][oO] .*	//"to consider"
+AUX	&AUX;+	//"will be"
 
-VBN	&VB;&VBN;	.*	[tT][oO] .*	//"to be provided"
-
+VERB/VB,VBN	(&VERB;|&AUX;)&ADJ;?&PART;(&VERB;|&AUX;)?(&_VB_;|&AUX;)&_VBN_;?	//"tend to borrow" "will be able to help" "had to be shared"
+VERB	&AUX;&VBG;	//"was getting"
+VERB/VB	(&VERB;|&VB;|&AUX;)&ADV;+&_VB_;?	.*not.*	//overcut by spaCy ("don't" => "do n't") "don't refer" "don't ever refer"
 VERB	(&QBEG;|&QUOT;)&VERB;(&QEND;|&QUOT;)	//"« can »"
 VERB	&VERB;&CONJ;&VERB;	//
 VERB	(&ADV;|&ADJ;)*&AUX;(&_VERB_;|&_VB_;)	//"will comme"
+VERB	(&VERB;|&AUX;)(&ADV;|&VBG;)*&VBN;	//"gets approved" "have not found" "hates feeling isolated"
 
-ADJ	(&QBEG;|&QUOT;)&ADJ;(&QEND;|&QUOT;)	//"« saine »"
-ADJ/ADJ,VBN	&_ADJ_;((&CONJ;|&SLSH;)*(&_ADJ_;|&_VBN_;))+	//"rouge et vert" "jolie et maquillée"
+VB/PART,+(_?(AUX|VERB|VB)_?)+>VB	(&VBG;|&ADJ;)*&_PART_;(&_AUX_;|&_VERB_;|&_VB_;)	.*	(.* )?[tT][oO] .*	//"to consider" "being able to improve"
+
+VBN	&VB;&VBN;	.*	[tT][oO] .*	//"to be provided"
+
+ADJ	(&QBEG;|&QUOT;)&ADJ;(&QEND;|&QUOT;)	//"« true »"
+ADJ/ADJ,VBN	&_ADJ_;((&CONJ;|&SLSH;|&HYP;)*(&_ADJ_;|&_VBN_;))+	//"red and green" "28-year-old"
 ADJ	&ADJ;&ADP;(&NUM;|&NOUN;|&ADJ;|&ADP;)*(&NUM;|&NOUN;|&ADJ;)+	//"agés de six mois à quatre ans"
 ADJ	&VBG;&ADP;&DET;?&NOUN;	//"contenant du sable" "produisant de la valeur"
+ADJ	&ADJ;&ADV;	//"available widely"
 
 ADP	(&QBEG;|&QUOT;)&ADP;(&QEND;|&QUOT;)	//"« près »"
 ADP	&ADV;&ADP;	//"plus près"
-ADP	&ADP;&VB;?(&DET;|&ADP;)	.*	.* d[eu']	//"près de" "à partir du" "à compter de"
+ADP	&VBG;&ADP;	//"according to" "working with"
 
 ADV	(&QBEG;|&QUOT;)&ADV;(&QEND;|&QUOT;)	//"« plus »"
 ADV	&ADV;(&CONJ;|&SLSH;)*(&ADV;|&VBN;)	//"plus vite" "vite et bien" "vite fait bien fait"
@@ -157,13 +167,16 @@ PROPN/NOUN,PROPN,X	(&_NOUN_;|&_PROPN_;|&_X_;|&_UNK_;)&PROPN;	//Disambiguate
 NOUN/NOUN	(&NOUN;&ADP;&_NOUN_;|&_NOUN_;&ADP;&NOUN;)	//Disambiguate "instruction de prélèvement"
 NOUN/NOUN,PROPN	(&NOUN;(&HYP;|&SLSH;|&CONJ;)(&_NOUN_;|&_PROPN_;)|(&_NOUN_;|&_PROPN_;)(&HYP;|&SLSH;|&CONJ;)&NOUN;)	//Disambiguate "homme - femme"
 PROPN/NOUN,PROPN	(&PROPN;(&HYP;|&SLSH;|&CONJ;)(&_NOUN_;|&_PROPN_;)|(&_NOUN_;|&_PROPN_;)(&HYP;|&SLSH;|&CONJ;)&PROPN;)	//Disambiguate "Vincent et Robert"
+NOUN	&DET;&HYP;&NOUN;	//"no-go"
+NOUN	(&_ADV_;|&_ADJ_;)&HYP;&NOUN;	//"over-the-top"
 
 NOUN	(&QBEG;|&QUOT;)&NOUN;(&QEND;|&QUOT;)	//"« IBG »"
 NOUN	&PRON;&VB;	//"au dîner"
 NOUN	&NOUN;&HYP;&ADV;	//"prix-là"
-NOUN	(&ADJ;|&NUM;|&VBN;|&VB;|&ADJ_NOUN;|&DET_ADJ;)*(&NOUN;|&PROPN;|&UNK;)	//
-NOUN	(&DET;|&NUM;|&NOUN;)(&NUM;|&ADJ;|&ADV;|&ADP;|&NOUN;)*&NOUN;	//"la grande peinture" "le 21 mars"
-NOUN	(&ADJ;|&NUM;)+&NOUN;	//"premier parti" "deux verres"
+NOUN/VBG,ADJ	(&_ADJ_;|&_VBG_;|&NUM;|&VBN;)*(&NOUN;|&PROPN;|&UNK;)	//"excruciating pain"
+NOUN	(&DET;|&NUM;|&NOUN;)(&NUM;|&ADJ;|&ADV;|&ADP;|&NOUN;)*&NOUN;	//"the big thing"
+NOUN	(&ADJ;|&NUM;)+&NOUN;	//
+NOUN	&NOUN;&HYP;&VBG;	//"life - changing"
 
 //==================================================
 EXTRACT	//=====	Subset of rules applied after chunking, limited to the content of each chunk
@@ -177,10 +190,16 @@ NUM	&NUM;((&SPACE;|&ADP;|&HYP;|&SLSH;|&PUNCT;|&CONJ;)&NUM;)+	//"8 à 10"
 ADJ	&VBG;&ADP;&DET;?&NOUN;	//"contenant du sable" "produisant de la valeur"
 ADJ	&ADJ;(&ADP;|&HYP;|&SLSH;|&CONJ;)&ADJ;	//"public ou privé"
 
+PROPN	&PROPN;+&CONJ;&PROPN;+	.*	.* and .*	//"Guys and St Thomas"
+PROPN	&PROPN;&NUM;
+
++PROPN	&NOUN;	.*	.*[A-Z].*[A-Z].*	//Multiple maj are certainly PROPN
+
 NOUN	&NOUN;(&HYP;|&SLSH;|&CONJ;|&DET;|&ADP;)*&NOUN;
 NOUN	&NUM;*(&ADJ;|&ADV;|&NUM;|&VBN;|&VB;|&ADJ_NOUN;)*&NOUN;
-
-PROPN	&PROPN;&NUM;
+NOUN	&NOUN;&HYP;&VBG;	//"life - changing"
+NOUN	&DET;&HYP;&NOUN;	//"no-go"
+NOUN	(&_ADV_;|&_ADJ_;)&HYP;&NOUN;	//"over-the-top"
 
 ~PROPN	(&PROPN;|&X;|&UNK;)+	//When here, all possible should have been done, thus should be the final form
 ~NOUN	&NOUN;+	//When here, all possible should have been done, thus should be the final form

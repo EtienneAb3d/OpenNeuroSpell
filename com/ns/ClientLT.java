@@ -42,7 +42,9 @@ public class ClientLT {
 					}
 					
 					ArrayList<String> aSents = new ArrayList<String>();
-					String aTxt = aSB.toString().replaceAll("["+NSUtils.allapos+"]", "'");
+					String aTxt = aSB.toString().replaceAll("["+NSUtils.allapos+"]", "'")
+							.replaceAll(" *- *", " - ")//Force it to cut on hyphen, to be similar to other tokenizers
+							;
 					aSents.add(aTxt);
 					List<AnalyzedSentence> aASents = aLangTool.analyzeSentences(aSents);
 					

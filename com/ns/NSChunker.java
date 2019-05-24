@@ -8,7 +8,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class NSChunker {
-	static final boolean _DEBUG_ALL = false;
+	static final boolean _DEBUG_ALL = true;
 	static final boolean _DEBUG = false;
 	
 	class NSChunkerRule{

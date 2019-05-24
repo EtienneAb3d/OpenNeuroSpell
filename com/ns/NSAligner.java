@@ -79,17 +79,17 @@ public class NSAligner {
 			//Merge diff
 			aT.posOrig = aP12.t1.pos
 					+ "_" + (aPos2 == null ? "???" : aPos2)
-					+ "_" + (aPos3 == null ? "???" : aPos3);
+					+ "_" + (aPos3 == null ? "???" : aPos3.replaceAll(" +", "-"));
 
 			if(aPos3 != null) {
 				if(aPos2 != null) {
-					if(aPos3.indexOf(aP12.t1.pos) >= 0
-							&& aPos3.indexOf(aPos2) < 0) {
+					if((" "+aPos3+" ").indexOf(" "+aP12.t1.pos+" ") >= 0
+							&& (" "+aPos3+" ").indexOf(" "+aPos2+" ") < 0) {
 						//Only 1 is possible, keep it
 						continue;
 					}
-					if(aPos3.indexOf(aPos2) >= 0
-							&& aPos3.indexOf(aP12.t1.pos) < 0) {
+					if((" "+aPos3+" ").indexOf(" "+aPos2+" ") >= 0
+							&& (" "+aPos3+" ").indexOf(" "+aP12.t1.pos+" ") < 0) {
 						//Only 2 is possible, take it
 						aT.pos = aP12.t2.pos;
 						continue;
