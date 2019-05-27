@@ -1,10 +1,10 @@
 #!/bin/bash
-#!/usr/bin/env python3.6
+#!/usr/bin/env python3
 
 #Already done with spaCy: sudo apt install virtualenv
 
 pushd ~/
-#Already done with spaCy: virtualenv --system-site-packages -p python3.6 ./venvNS
+#Already done with spaCy: virtualenv --system-site-packages -p python3 ./venvNS
 . ./venvNS/bin/activate
 popd
 

@@ -100,6 +100,38 @@ def ent(text: str, model: str):
         for ent in doc.ents
     ]
 
+def takeSecond(elem):
+    return elem[1]
+
+def most_similar(word):
+    queries = [(w, word.similarity(w)) for w in word.vocab if 
+        w.is_alpha == word.is_alpha 
+        and w.has_vector == word.has_vector
+        and w.suffix_ == word.suffix_
+        and w.shape == word.shape
+        and w.is_lower == word.is_lower 
+        and w.prob >= -20]
+    by_similarity = sorted(queries, key= takeSecond, reverse=True)
+    return by_similarity[:10]
+
+@hug.post("/syn")
+def syn(
+	text: str,
+	model: str
+):
+	print("SYN=====")
+	print("TEXT="+text)
+	print("MODEL="+model)
+	nlp = getModel(model)
+	nAll = {}
+	for w in text.split(" ") :
+		sims = most_similar(nlp.vocab[w])
+		simsTxts = [];
+		for s in sims:
+			print(w+"/"+s[0].lower_+" "+ "%.3f" % s[1])
+			simsTxts.append([s[0].lower_,s[1]]);
+		nAll[w] = simsTxts
+	return nAll
 
 if __name__ == "__main__":
     import waitress

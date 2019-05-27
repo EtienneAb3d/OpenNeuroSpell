@@ -14,17 +14,22 @@ import com.ns.NSChunker.NSChunkerRule;
 public class ClientSpacy {
 	static final boolean _DEBUG = false;
 
-	static final HashMap<String,String> model4lng = new HashMap<String,String>();
+	static final HashMap<String,String> lng2PosModel = new HashMap<String,String>();
 	static {
-		model4lng.put("fr", "fr_core_news_sm");
-		model4lng.put("en", "en_core_web_sm");
+		lng2PosModel.put("fr", "fr_core_news_sm");
+		lng2PosModel.put("en", "en_core_web_sm");
+	}
+	static final HashMap<String,String> lng2SimModel = new HashMap<String,String>();
+	static {
+		lng2SimModel.put("fr", "fr_core_news_md");
+		lng2SimModel.put("en", "en_core_web_md");
 	}
 	static int port = 8091;
 	static int instances = 1;
 	static int currentInstance = 0;
 
-	static String getModel(String aLng) throws Exception {
-		String aModel = model4lng.get(aLng);
+	static String getPosModel(String aLng) throws Exception {
+		String aModel = lng2PosModel.get(aLng);
 		if(aModel != null){
 			return aModel;
 		}
@@ -52,6 +57,14 @@ public class ClientSpacy {
 		}
 		return aModel;
 	}
+	
+	static String getSimModel(String aLng) throws Exception {
+		String aModel = lng2SimModel.get(aLng);
+		if(aModel != null){
+			return aModel;
+		}
+		return null;
+	}
 
 	public static Thread getTagBatch(final Vector<NSTaggedSent> aTSs,final String aLng,Vector<Vector<NSChunkerRule>> aLtLayers) throws Exception {
 		if(_DEBUG || NSChunker._DEBUG_ALL) {
@@ -61,7 +74,7 @@ public class ClientSpacy {
 			@Override
 			public void run() {
 				try {
-					String aModel = getModel(aLng);
+					String aModel = getPosModel(aLng);
 
 					StringBuffer aSB = new StringBuffer();
 					for(NSTaggedSent aTS : aTSs) {
@@ -173,7 +186,7 @@ public class ClientSpacy {
 	public static String getEnt(String aTxt,String aLng) throws Exception {
 		StringBuffer aSB = new StringBuffer();
 		try {
-			String aModel = ClientSpacy.getModel(aLng);
+			String aModel = ClientSpacy.getPosModel(aLng);
 			
 			if(_DEBUG || NSChunker._DEBUG_ALL) {
 				System.out.println("SPACYMODEL="+aLng+"/"+aModel);
@@ -236,7 +249,7 @@ public class ClientSpacy {
 		StringBuffer aSB = new StringBuffer();
 		try {
 			Post aPost = new Post();
-			String aModel = getModel(aLng);
+			String aModel = getPosModel(aLng);
 			
 			if(_DEBUG || NSChunker._DEBUG_ALL) {
 				System.out.println("SPACYMODEL="+aLng+"/"+aModel);
@@ -293,20 +306,74 @@ public class ClientSpacy {
 		return aSB.toString();
 	}
 	
+	static HashMap<String,String> syn(Vector<String> aTxts,String aLng) throws Exception {
+		HashMap<String,String> aSyns = new HashMap<String,String>();
+
+		StringBuffer aLst = new StringBuffer();
+		for(String aTxt : aTxts) {
+			if(aTxt.length() <= 1
+					|| aTxt.matches(".*[0-9].*")) {
+				continue;
+			}
+			if(aLst.length() > 0) {
+				aLst.append(" ");
+			}
+			aLst.append(aTxt);
+		}
+
+		//Does not work !?
+		String aModel = getSimModel(aLng);
+
+		Post aPost = new Post();
+		aPost.setConnectTimeout(60*1000);
+		aPost.setPostParms("text",aLst.toString(),
+			    "model",aModel
+				);
+
+		//		String aRep = aPost.send("localhost",port,"/tagOnly", "utf-8");
+		String aRep = aPost.send("localhost",port,"/syn", "utf-8");
+		if(_DEBUG || NSChunker._DEBUG_ALL) {
+			System.out.println("SPACY="+aRep);
+		}
+		JSONParser parser = new JSONParser();
+		JSONObject aJSO = (JSONObject)parser.parse(aRep);
+		for(String aTxt : aTxts) {
+			Object aSs = aJSO.get(aTxt);
+			if(aSs == null) {
+				continue;
+			}
+			StringBuffer aSSB = new StringBuffer();
+			for(Object aO : (JSONArray)aSs) {
+				if(aSSB.length() > 0) {
+					aSSB.append(" ");
+				}
+				aSSB.append(aO);
+			}
+			if(aSSB.length() <= 0) {
+				continue;
+			}
+			aSyns.put(aTxt, aSSB.toString());
+		}
+		return aSyns;
+	}
+
 	public static void main(String[] args) {
 		try {
-			Vector<NSTaggedSent> aTSs = new Vector<NSTaggedSent>();
-			NSTaggedSent aTS = new NSTaggedSent();
-			aTS.text = 
-					"‘Libéraux contre populistes' : la médiatisation à outrance de ce clivage vise à contraindre les populations à choisir l'un de ces deux maux. ➟ (In. ‘Tous populistes !' #MDV164)";
-			aTSs.add(aTS);
-			NSTaggedSent aTS2 = new NSTaggedSent();
-			aTS2.text = "Ceci est une deuxième phrase pour tester.";
-			aTSs.add(aTS2);
-			Thread aTh = ClientSpacy.getTagBatch(aTSs, "fr",new Vector<Vector<NSChunkerRule>>());
-			aTh.join();
-			System.out.println("POS: "+aTS.idxPos);
-			System.out.println("POS: "+aTS2.idxPos);
+			Vector<String> aWs = new Vector<String>();
+			String aLng =
+//					"en";
+					"fr";
+			String aTxt = 
+//					"I go fishing on sunday .";
+					"Je vais à la pêche le dimanche .";
+			for(String aW : aTxt.split(" ")) {
+				aWs.add(aW);
+			}
+			HashMap<String,String> aSyns = ClientSpacy.syn(aWs, aLng);
+			for(String aW : aWs) {
+				String aSs = aSyns.get(aW);
+				System.out.println(aW+": "+(aSs == null ? "" : aSs));
+			}
 		}
 		catch(Throwable t) {
 			t.printStackTrace(System.err);
