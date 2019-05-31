@@ -8,7 +8,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class NSChunker {
-	static final boolean _DEBUG_ALL = true;
+	static final boolean _DEBUG_ALL = false;
 	static final boolean _DEBUG = false;
 	
 	class NSChunkerRule{
@@ -175,7 +175,7 @@ public class NSChunker {
 	NSChunk buildChunk(Vector<NSToken> aWs,String aPosTok)  throws Exception {
 		return buildChunk(aWs, aPosTok, 0);
 	}
-	NSChunk buildChunk(Vector<NSToken> aWs,String aPosTok,int aStartIdx)  throws Exception {
+	NSChunk buildChunk(Vector<NSToken> aTs,String aPosTok,int aStartIdx)  throws Exception {
 		NSChunk aChunk = new NSChunk();
 		aChunk.pos = aPosTok.replaceAll("[0-9,]", "");
 		int aS = Integer.parseInt(aPosTok.replaceAll(",.*", ""));
@@ -186,22 +186,16 @@ public class NSChunker {
 		StringBuffer aTagSB = new StringBuffer();
 		int aIdx = aStartIdx;
 		for(int p = aS;p<=aE;p++) {
-			NSToken aW = aWs.elementAt(p);
-			if(aW.doNotPrint) {
+			NSToken aT = aTs.elementAt(p);
+			if(aT.doNotPrint) {
 				continue;
 			}
-			aChunk.tokens.add(aW);
-			aChunkSB.append(" "+aW.token);
-			aPosSB.append(" "+aW.pos+" ");
-			aIdxPosSB.append(" "+aIdx+","+aIdx+aW.pos+" ");
+			aChunk.tokens.add(aT);
+			aChunkSB.append(" "+aT.token);
+			aPosSB.append(" "+aT.pos+" ");
+			aIdxPosSB.append(" "+aIdx+","+aIdx+aT.pos+" ");
 			aIdx++;
-			aTagSB.append(" "+aW.tag);
-			if(aW.tag.indexOf("=Plur")>=0) {
-				aChunk.hasPlur = true;
-			}
-			if(aW.tag.indexOf("=Fem")>=0) {
-				aChunk.hasFem = true;
-			}
+			aTagSB.append(" "+aT.tag);
 		}
 		aChunk.chunk = aChunkSB.toString()
 				.replaceAll("[(] +", "(")
@@ -210,9 +204,111 @@ public class NSChunker {
 		aChunk.posExt = aPosSB.toString().replaceAll(" +", " ").trim();
 		aChunk.idxPos = aIdxPosSB.toString();
 		aChunk.tagExt = aTagSB.toString().trim();
+		
+		evalPlur(aChunk);
+		evalFem(aChunk);
+		
 		return aChunk;
 	}
 	
+	//Hard coded eval in this version
+	void evalPlur(NSChunk aChunk) throws Exception {
+		if("fr".equalsIgnoreCase(lng)) {
+			boolean aLtMayBe = false;
+			boolean aLtHasUnk = false;
+			for(NSToken aT : aChunk.tokens) {
+				if(aT.tag.matches(".*LT: ")){
+					aLtHasUnk = true;
+				}
+				if(aT.tag.matches(".*LT: (,?[^\t,]*\t[^\\t,] p=?)+")) {
+					//LT is sure
+					aChunk.hasPlur = true;
+					break;
+				}
+				if(aT.tag.matches(".*LT: .*\t[^\\t,]* p=?(,.*)?")) {
+					aLtMayBe = true;
+				}
+			}
+			if(!aLtHasUnk && !aLtMayBe) {
+				//Avoid doing something wrong
+				return;
+			}
+			for(NSToken aT : aChunk.tokens) {
+				if(aT.tag.indexOf("=Plur")>=0) {
+					//spaCy is sure
+					aChunk.hasPlur = true;
+					break;
+				}
+			}
+			return;
+		}
+		if("en".equalsIgnoreCase(lng)) {
+			boolean aLtMayBe = false;
+			boolean aLtHasUnk = false;
+			for(NSToken aT : aChunk.tokens) {
+				if(aT.tag.matches(".*LT: ")){
+					aLtHasUnk = true;
+				}
+				if(aT.tag.matches(".*LT: (,?[^\t,]*\t(NNS|NNPS))+")) {
+					//LT is sure
+					aChunk.hasPlur = true;
+					break;
+				}
+				if(aT.tag.matches(".*LT: .*\t(NNS|NNPS)(,.*)?")) {
+					aLtMayBe = true;
+				}
+			}
+			if(!aLtHasUnk && !aLtMayBe) {
+				//Avoid doing something wrong
+				return;
+			}
+			for(NSToken aT : aChunk.tokens) {
+				if(aT.tag.matches(".*\\t(NNS|NNPS) LT:.*")) {
+					//spaCy is sure
+					aChunk.hasPlur = true;
+					break;
+				}
+			}
+			return;
+		}
+	}
+	
+	//Hard coded eval in this version
+	void evalFem(NSChunk aChunk) throws Exception {
+		if("fr".equalsIgnoreCase(lng)) {
+			boolean aLtMayBe = false;
+			boolean aLtHasUnk = false;
+			for(NSToken aT : aChunk.tokens) {
+				if(aT.tag.matches(".*LT: ")){
+					aLtHasUnk = true;
+				}
+				if(aT.tag.matches(".*LT:(,?[^\t,]\t[^\\t,] f [a-z=]*)+")) {
+					//LT is sure
+					aChunk.hasFem= true;
+					break;
+				}
+				if(aT.tag.matches(".*LT:.*\t[^\\t,] f [a-z=]*(,.*)?")) {
+					aLtMayBe = true;
+				}
+			}
+			if(!aLtHasUnk && !aLtMayBe) {
+				//Avoid doing something wrong
+				return;
+			}
+			for(NSToken aT : aChunk.tokens) {
+				if(aT.tag.indexOf("=Fem")>=0) {
+					//spaCy is sure
+					aChunk.hasFem = true;
+					break;
+				}
+			}
+			return;
+		}
+		if("en".equalsIgnoreCase(lng)) {
+			//??
+		}
+	}
+
 	void disambiguate(Vector<NSToken> aWs,Vector<String> aDs) throws Exception {
 		for(NSToken aW : aWs) {
 			for(String aD : aDs) {
