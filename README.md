@@ -9,6 +9,9 @@ NSChunker is a rule-based iterative label rewriter / aggregator. Each rule takes
 
 This version is available with rule sets for French and English.
 
+An online demonstrator is available here:
+http://nschunker.cubaix.com/
+
 ### 1- Install and run spaCy and polyglot servers
 
 NSChunker is using spaCy and polyglot POS-tagger.
