@@ -8,7 +8,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class NSChunker {
-	static final boolean _DEBUG_ALL = false;
+	static final boolean _DEBUG_ALL = true;
 	static final boolean _DEBUG = false;
 	
 	class NSChunkerRule{
@@ -220,7 +220,7 @@ public class NSChunker {
 				if(aT.tag.matches(".*LT: ")){
 					aLtHasUnk = true;
 				}
-				if(aT.tag.matches(".*LT: (,?[^\t,]*\t[^\\t,] p=?)+")) {
+				if(aT.tag.matches(".*LT: (,?[^\t,]*\t[^\\t,]* p=?)+")) {
 					//LT is sure
 					aChunk.hasPlur = true;
 					break;
@@ -282,12 +282,12 @@ public class NSChunker {
 				if(aT.tag.matches(".*LT: ")){
 					aLtHasUnk = true;
 				}
-				if(aT.tag.matches(".*LT:(,?[^\t,]\t[^\\t,] f [a-z=]*)+")) {
+				if(aT.tag.matches(".*LT:(,?[^\t,]*\t[^\\t,]* f [a-z=]*)+")) {
 					//LT is sure
 					aChunk.hasFem= true;
 					break;
 				}
-				if(aT.tag.matches(".*LT:.*\t[^\\t,] f [a-z=]*(,.*)?")) {
+				if(aT.tag.matches(".*LT:.*\t[^\\t,]* f [a-z=]*(,.*)?")) {
 					aLtMayBe = true;
 				}
 			}
