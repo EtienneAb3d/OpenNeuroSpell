@@ -111,7 +111,7 @@ AUX	&AUX;+	//"will be"
 
 VERB/VB,VBN	(&VERB;|&AUX;)&ADJ;?&PART;(&VERB;|&AUX;)?(&_VB_;|&AUX;)&_VBN_;?	//"tend to borrow" "will be able to help" "had to be shared"
 VERB	&AUX;&VBG;	//"was getting"
-VERB/VB	(&VERB;|&VB;|&VBN;|&AUX;)&ADV;+&_VB_;?	.*not.*	//overcut by spaCy ("don't" => "do n't") "don't refer" "don't ever refer"
+VERB/VB	(&VERB;|&VB;|&VBN;|&AUX;)&ADV;+&_VB_;?	.*not.*	//overcut by spaCy ("don't" => "do n't") "don't refer" "don't ever refer" "did not take"
 VERB	(&QBEG;|&QUOT;)&VERB;(&QEND;|&QUOT;)	//"« can »"
 VERB	&VERB;&CONJ;&VERB;	//
 VERB	(&ADV;|&ADJ;)*&AUX;(&_VERB_;|&_VB_;)	//"will comme"
